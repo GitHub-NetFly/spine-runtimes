@@ -1,35 +1,33 @@
-/******************************************************************************
- * Spine Runtimes License Agreement
- * Last updated May 1, 2019. Replaces all prior versions.
- *
- * Copyright (c) 2013-2019, Esoteric Software LLC
- *
- * Integration of the Spine Runtimes into software or otherwise creating
- * derivative works of the Spine Runtimes is permitted under the terms and
- * conditions of Section 2 of the Spine Editor License Agreement:
- * http://esotericsoftware.com/spine-editor-license
- *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
- * "Products"), provided that each user of the Products must obtain their own
- * Spine Editor license and redistribution of the Products in any form must
- * include this license and copyright notice.
- *
- * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE LLC "AS IS" AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
- * NO EVENT SHALL ESOTERIC SOFTWARE LLC BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS
- * INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *****************************************************************************/
+﻿/******************************************************************************
+* Spine Runtimes Software License v2.5
+*
+* Copyright (c) 2013-2016, Esoteric Software
+* All rights reserved.
+*
+* You are granted a perpetual, non-exclusive, non-sublicensable, and
+* non-transferable license to use, install, execute, and perform the Spine
+* Runtimes software and derivative works solely for personal or internal
+* use. Without the written permission of Esoteric Software (see Section 2 of
+* the Spine Software License Agreement), you may not (a) modify, translate,
+* adapt, or develop new applications using the Spine Runtimes or otherwise
+* create derivative works or improvements of the Spine Runtimes or (b) remove,
+* delete, alter, or obscure any trademarks or any copyright, trademark, patent,
+* or other intellectual property or proprietary rights notices on or in the
+* Software, including any copy thereof. Redistributions in binary or source
+* form must include this license and terms.
+*
+* THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE "AS IS" AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL ESOTERIC SOFTWARE BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS INTERRUPTION, OR LOSS OF
+* USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+* IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+* POSSIBILITY OF SUCH DAMAGE.
+*****************************************************************************/
 
-#ifdef SPINE_UE4
-#include "SpinePluginPrivatePCH.h"
-#endif
 
 #include <spine/PathConstraint.h>
 
@@ -54,14 +52,14 @@ const int PathConstraint::AFTER = -3;
 PathConstraint::PathConstraint(PathConstraintData &data, Skeleton &skeleton) : Updatable(),
 																			   _data(data),
 																			   _target(skeleton.findSlot(
-																					   data.getTarget()->getName())),
+																					   data.getTarget()->getName()).Get()),
 																			   _position(data.getPosition()),
 																			   _spacing(data.getSpacing()),
 																			   _rotateMix(data.getRotateMix()),
 																			   _translateMix(data.getTranslateMix()),
 																			   _active(false) {
 	_bones.ensureCapacity(_data.getBones().size());
-	for (size_t i = 0; i < _data.getBones().size(); i++) {
+	for (int32 i = 0; i < _data.getBones().size(); i++) {
 		BoneData *boneData = _data.getBones()[i];
 		_bones.add(skeleton.findBone(boneData->getName()));
 	}
@@ -93,8 +91,8 @@ void PathConstraint::update() {
 	bool percentSpacing = data._spacingMode == SpacingMode_Percent;
 	RotateMode rotateMode = data._rotateMode;
 	bool tangents = rotateMode == RotateMode_Tangent, scale = rotateMode == RotateMode_ChainScale;
-	size_t boneCount = _bones.size();
-	size_t spacesCount = tangents ? boneCount : boneCount + 1;
+	int32 boneCount = _bones.size();
+	int32 spacesCount = tangents ? boneCount : boneCount + 1;
 	_spaces.setSize(spacesCount, 0);
 	float spacing = _spacing;
 	if (scale || !percentSpacing) {
@@ -103,7 +101,7 @@ void PathConstraint::update() {
 		}
 		bool lengthSpacing = data._spacingMode == SpacingMode_Length;
 
-		for (size_t i = 0, n = spacesCount - 1; i < n;) {
+		for (int32 i = 0, n = spacesCount - 1; i < n;) {
 			Bone *boneP = _bones[i];
 			Bone &bone = *boneP;
 			float setupLength = bone._data.getLength();
@@ -131,7 +129,7 @@ void PathConstraint::update() {
 			}
 		}
 	} else {
-		for (size_t i = 1; i < spacesCount; ++i) {
+		for (int32 i = 1; i < spacesCount; ++i) {
 			_spaces[i] = spacing;
 		}
 	}
@@ -151,7 +149,7 @@ void PathConstraint::update() {
 		offsetRotation *= p.getA() * p.getD() - p.getB() * p.getC() > 0 ? MathUtil::Deg_Rad : -MathUtil::Deg_Rad;
 	}
 
-	for (size_t i = 0, p = 3; i < boneCount; i++, p += 3) {
+	for (int32 i = 0, p = 3; i < boneCount; i++, p += 3) {
 		Bone *boneP = _bones[i];
 		Bone &bone = *boneP;
 		bone._worldX += (boneX - bone._worldX) * translateMix;

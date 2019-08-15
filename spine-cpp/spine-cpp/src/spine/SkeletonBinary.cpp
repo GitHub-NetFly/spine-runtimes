@@ -1,35 +1,33 @@
-/******************************************************************************
- * Spine Runtimes License Agreement
- * Last updated May 1, 2019. Replaces all prior versions.
- *
- * Copyright (c) 2013-2019, Esoteric Software LLC
- *
- * Integration of the Spine Runtimes into software or otherwise creating
- * derivative works of the Spine Runtimes is permitted under the terms and
- * conditions of Section 2 of the Spine Editor License Agreement:
- * http://esotericsoftware.com/spine-editor-license
- *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
- * "Products"), provided that each user of the Products must obtain their own
- * Spine Editor license and redistribution of the Products in any form must
- * include this license and copyright notice.
- *
- * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE LLC "AS IS" AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
- * NO EVENT SHALL ESOTERIC SOFTWARE LLC BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS
- * INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *****************************************************************************/
+﻿/******************************************************************************
+* Spine Runtimes Software License v2.5
+*
+* Copyright (c) 2013-2016, Esoteric Software
+* All rights reserved.
+*
+* You are granted a perpetual, non-exclusive, non-sublicensable, and
+* non-transferable license to use, install, execute, and perform the Spine
+* Runtimes software and derivative works solely for personal or internal
+* use. Without the written permission of Esoteric Software (see Section 2 of
+* the Spine Software License Agreement), you may not (a) modify, translate,
+* adapt, or develop new applications using the Spine Runtimes or otherwise
+* create derivative works or improvements of the Spine Runtimes or (b) remove,
+* delete, alter, or obscure any trademarks or any copyright, trademark, patent,
+* or other intellectual property or proprietary rights notices on or in the
+* Software, including any copy thereof. Redistributions in binary or source
+* form must include this license and terms.
+*
+* THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE "AS IS" AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL ESOTERIC SOFTWARE BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS INTERRUPTION, OR LOSS OF
+* USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+* IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+* POSSIBILITY OF SUCH DAMAGE.
+*****************************************************************************/
 
-#ifdef SPINE_UE4
-#include "SpinePluginPrivatePCH.h"
-#endif
 
 #include <spine/SkeletonBinary.h>
 
@@ -94,7 +92,7 @@ const int SkeletonBinary::CURVE_STEPPED = 1;
 const int SkeletonBinary::CURVE_BEZIER = 2;
 
 SkeletonBinary::SkeletonBinary(Atlas *atlasArray) : _attachmentLoader(
-		new(__FILE__, __LINE__) AtlasAttachmentLoader(atlasArray)), _error(), _scale(1), _ownsLoader(true) {
+		new AtlasAttachmentLoader(atlasArray)), _error(), _scale(1), _ownsLoader(true) {
 
 }
 
@@ -116,13 +114,13 @@ SkeletonData *SkeletonBinary::readSkeletonData(const unsigned char *binary, cons
 	bool nonessential;
 	SkeletonData *skeletonData;
 
-	DataInput *input = new(__FILE__, __LINE__) DataInput();
+	DataInput *input = new DataInput();
 	input->cursor = binary;
 	input->end = binary + length;
 
 	_linkedMeshes.clear();
 
-	skeletonData = new(__FILE__, __LINE__) SkeletonData();
+	skeletonData = new SkeletonData();
 
 	char *skeletonData_hash = readString(input);
 	skeletonData->_hash.own(skeletonData_hash);
@@ -154,7 +152,7 @@ SkeletonData *SkeletonBinary::readSkeletonData(const unsigned char *binary, cons
 	for (int i = 0; i < numBones; ++i) {
 		const char *name = readString(input);
 		BoneData *parent = i == 0 ? 0 : skeletonData->_bones[readVarint(input, true)];
-		BoneData *data = new(__FILE__, __LINE__) BoneData(i, String(name, true), parent);
+		BoneData *data = new BoneData(i, String(name, true), parent);
 		data->_rotation = readFloat(input);
 		data->_x = readFloat(input) * _scale;
 		data->_y = readFloat(input) * _scale;
@@ -175,10 +173,11 @@ SkeletonData *SkeletonBinary::readSkeletonData(const unsigned char *binary, cons
 	/* Slots. */
 	int slotsCount = readVarint(input, true);
 	skeletonData->_slots.setSize(slotsCount, 0);
-	for (int i = 0; i < slotsCount; ++i) {
-		const char *slotName = readString(input);
+	for (int i = 0; i < slotsCount; ++i)
+	{
+		String slotName(readString(input), true);
 		BoneData *boneData = skeletonData->_bones[readVarint(input, true)];
-		SlotData *slotData = new(__FILE__, __LINE__) SlotData(i, String(slotName, true), *boneData);
+		SlotData *slotData = new SlotData(i, slotName.buffer(), *boneData);
 
 		readColor(input, slotData->getColor());
 		unsigned char r = readByte(input);
@@ -199,7 +198,7 @@ SkeletonData *SkeletonBinary::readSkeletonData(const unsigned char *binary, cons
 	skeletonData->_ikConstraints.setSize(ikConstraintsCount, 0);
 	for (int i = 0; i < ikConstraintsCount; ++i) {
 		const char *name = readString(input);
-		IkConstraintData *data = new(__FILE__, __LINE__) IkConstraintData(String(name, true));
+		IkConstraintData *data = new  IkConstraintData(String(name, true));
 		data->setOrder(readVarint(input, true));
 		data->setSkinRequired(readBoolean(input));
 		int bonesCount = readVarint(input, true);
@@ -222,7 +221,7 @@ SkeletonData *SkeletonBinary::readSkeletonData(const unsigned char *binary, cons
 	skeletonData->_transformConstraints.setSize(transformConstraintsCount, 0);
 	for (int i = 0; i < transformConstraintsCount; ++i) {
 		const char *name = readString(input);
-		TransformConstraintData *data = new(__FILE__, __LINE__) TransformConstraintData(String(name, true));
+		TransformConstraintData *data = new  TransformConstraintData(String(name, true));
 		data->setOrder(readVarint(input, true));
 		data->setSkinRequired(readBoolean(input));
 		int bonesCount = readVarint(input, true);
@@ -251,7 +250,7 @@ SkeletonData *SkeletonBinary::readSkeletonData(const unsigned char *binary, cons
 	skeletonData->_pathConstraints.setSize(pathConstraintsCount, 0);
 	for (int i = 0; i < pathConstraintsCount; ++i) {
 		const char *name = readString(input);
-		PathConstraintData *data = new(__FILE__, __LINE__) PathConstraintData(String(name, true));
+		PathConstraintData *data = new  PathConstraintData(String(name, true));
 		data->setOrder(readVarint(input, true));
 		data->setSkinRequired(readBoolean(input));
 		int bonesCount = readVarint(input, true);
@@ -275,39 +274,40 @@ SkeletonData *SkeletonBinary::readSkeletonData(const unsigned char *binary, cons
 	}
 
 	/* Default skin. */
-	Skin* defaultSkin = readSkin(input, true, skeletonData, nonessential);
+	TSharedPtr<Skin> defaultSkin = readSkin(input, true, skeletonData, nonessential);
 	if (defaultSkin) {
 		skeletonData->_defaultSkin = defaultSkin;
-		skeletonData->_skins.add(defaultSkin);
+		skeletonData->_skins.Add(defaultSkin);
 	}
 
 	/* Skins. */
 	for (size_t i = 0, n = (size_t)readVarint(input, true); i < n; ++i) {
-		skeletonData->_skins.add(readSkin(input, false, skeletonData, nonessential));
+		skeletonData->_skins.Add(readSkin(input, false, skeletonData, nonessential));
 	}
 
 	/* Linked meshes. */
 	for (int i = 0, n = _linkedMeshes.size(); i < n; ++i) {
 		LinkedMesh *linkedMesh = _linkedMeshes[i];
-		Skin *skin = linkedMesh->_skin.length() == 0 ? skeletonData->getDefaultSkin() : skeletonData->findSkin(
-				linkedMesh->_skin);
-		if (skin == NULL) {
+		TSharedPtr<Skin> skin = linkedMesh->_skin.length() == 0 ? skeletonData->getDefaultSkin() : skeletonData->findSkin(
+				linkedMesh->_skin.buffer());
+		if (!skin )
+		{
 			delete input;
 			delete skeletonData;
 			setError("Skin not found: ", linkedMesh->_skin.buffer());
 			return NULL;
 		}
-		Attachment *parent = skin->getAttachment(linkedMesh->_slotIndex, linkedMesh->_parent);
-		if (parent == NULL) {
+		TSharedPtr<Attachment> parent = skin->getAttachment(linkedMesh->_slotIndex, linkedMesh->_parent.buffer());
+		if (!parent ) {
 			delete input;
 			delete skeletonData;
 			setError("Parent mesh not found: ", linkedMesh->_parent.buffer());
 			return NULL;
 		}
-		linkedMesh->_mesh->_deformAttachment = linkedMesh->_inheritDeform ? static_cast<VertexAttachment*>(parent) : linkedMesh->_mesh;
-		linkedMesh->_mesh->setParentMesh(static_cast<MeshAttachment *>(parent));
+		linkedMesh->_mesh->_deformAttachment = linkedMesh->_inheritDeform ? static_cast<VertexAttachment*>(parent.Get()) : linkedMesh->_mesh;
+		linkedMesh->_mesh->setParentMesh(static_cast<MeshAttachment *>(parent.Get()));
 		linkedMesh->_mesh->updateUVs();
-		_attachmentLoader->configureAttachment(linkedMesh->_mesh);
+		_attachmentLoader->configureAttachment(linkedMesh->_mesh->AsShared());
 	}
 	ContainerUtil::cleanUpVectorOfPointers(_linkedMeshes);
 	_linkedMeshes.clear();
@@ -317,7 +317,7 @@ SkeletonData *SkeletonBinary::readSkeletonData(const unsigned char *binary, cons
 	skeletonData->_events.setSize(eventsCount, 0);
 	for (int i = 0; i < eventsCount; ++i) {
 		const char *name = readStringRef(input, skeletonData);
-		EventData *eventData = new(__FILE__, __LINE__) EventData(String(name));
+		EventData *eventData = new  EventData(String(name));
 		eventData->_intValue = readVarint(input, false);
 		eventData->_floatValue = readFloat(input);
 		eventData->_stringValue.own(readString(input));
@@ -331,7 +331,8 @@ SkeletonData *SkeletonBinary::readSkeletonData(const unsigned char *binary, cons
 
 	/* Animations. */
 	int animationsCount = readVarint(input, true);
-	skeletonData->_animations.setSize(animationsCount, 0);
+	
+	skeletonData->_animations.SetNum(animationsCount);
 	for (int i = 0; i < animationsCount; ++i) {
 		String name(readString(input), true);
 		Animation *animation = readAnimation(name, input, skeletonData);
@@ -340,7 +341,7 @@ SkeletonData *SkeletonBinary::readSkeletonData(const unsigned char *binary, cons
 			delete skeletonData;
 			return NULL;
 		}
-		skeletonData->_animations[i] = animation;
+		skeletonData->_animations[i] = MakeShareable(animation);
 	}
 
 	delete input;
@@ -455,42 +456,51 @@ int SkeletonBinary::readVarint(DataInput *input, bool optimizePositive) {
 	return value;
 }
 
-Skin *
-SkeletonBinary::readSkin(DataInput *input, bool defaultSkin, SkeletonData *skeletonData, bool nonessential) {
-	Skin *skin;
+TSharedPtr<Skin> SkeletonBinary::readSkin(DataInput *input, bool defaultSkin, SkeletonData *skeletonData, bool nonessential)
+{
+	TSharedPtr<Skin> SkinPtr;
 	int slotCount = 0;
-	if (defaultSkin) {
+	if (defaultSkin) 
+	{
 		slotCount = readVarint(input, true);
-		if (slotCount == 0) return NULL;
-		skin = new(__FILE__, __LINE__) Skin("default");
-	} else {
-		skin = new(__FILE__, __LINE__) Skin(readStringRef(input, skeletonData));
-		for (int i = 0, n = readVarint(input, true); i < n; i++)
-			skin->getBones().add(skeletonData->_bones[readVarint(input, true)]);
+		if (slotCount == 0)
+		{
+			return nullptr;
+		}
+
+		SkinPtr = MakeShared<Skin>("default");
+	}
+	else 
+	{
+		SkinPtr = MakeShared<Skin>(readStringRef(input, skeletonData));
 
 		for (int i = 0, n = readVarint(input, true); i < n; i++)
-			skin->getConstraints().add(skeletonData->_ikConstraints[readVarint(input, true)]);
+			SkinPtr->getBones().add(skeletonData->_bones[readVarint(input, true)]);
 
 		for (int i = 0, n = readVarint(input, true); i < n; i++)
-			skin->getConstraints().add(skeletonData->_transformConstraints[readVarint(input, true)]);
+			SkinPtr->getConstraints().add(skeletonData->_ikConstraints[readVarint(input, true)]);
 
 		for (int i = 0, n = readVarint(input, true); i < n; i++)
-			skin->getConstraints().add(skeletonData->_pathConstraints[readVarint(input, true)]);
+			SkinPtr->getConstraints().add(skeletonData->_transformConstraints[readVarint(input, true)]);
+
+		for (int i = 0, n = readVarint(input, true); i < n; i++)
+			SkinPtr->getConstraints().add(skeletonData->_pathConstraints[readVarint(input, true)]);
 		slotCount = readVarint(input, true);
 	}
 
-	for (int i = 0; i < slotCount; ++i) {
+	for (int i = 0; i < slotCount; ++i) 
+	{
 		int slotIndex = readVarint(input, true);
 		for (int ii = 0, nn = readVarint(input, true); ii < nn; ++ii) {
 			String name(readStringRef(input, skeletonData));
-			Attachment *attachment = readAttachment(input, skin, slotIndex, name, skeletonData, nonessential);
-			if (attachment) skin->setAttachment(slotIndex, String(name), attachment);
+			TSharedPtr<Attachment> attachment = readAttachment(input, SkinPtr.Get(), slotIndex, name, skeletonData, nonessential);
+			if (attachment) SkinPtr->setAttachment(slotIndex, name.buffer(), attachment);
 		}
 	}
-	return skin;
+	return SkinPtr;
 }
 
-Attachment *SkeletonBinary::readAttachment(DataInput *input, Skin *skin, int slotIndex, const String &attachmentName,
+TSharedPtr<Attachment> SkeletonBinary::readAttachment(DataInput *input, Skin *skin, int slotIndex, const String &attachmentName,
 										   SkeletonData *skeletonData, bool nonessential) {
 	String name(readStringRef(input, skeletonData));
 	if (name.isEmpty()) name = attachmentName;
@@ -500,8 +510,8 @@ Attachment *SkeletonBinary::readAttachment(DataInput *input, Skin *skin, int slo
 		case AttachmentType_Region: {
 			String path(readStringRef(input, skeletonData));
 			if (path.isEmpty()) path = name;
-			RegionAttachment *region = _attachmentLoader->newRegionAttachment(*skin, String(name), String(path));
-			region->_path = path;
+			TSharedPtr<RegionAttachment> region = _attachmentLoader->newRegionAttachment(*skin, name.buffer(), path.buffer());
+			region->_path = path.buffer();
 			region->_rotation = readFloat(input);
 			region->_x = readFloat(input) * _scale;
 			region->_y = readFloat(input) * _scale;
@@ -516,8 +526,8 @@ Attachment *SkeletonBinary::readAttachment(DataInput *input, Skin *skin, int slo
 		}
 		case AttachmentType_Boundingbox: {
 			int vertexCount = readVarint(input, true);
-			BoundingBoxAttachment *box = _attachmentLoader->newBoundingBoxAttachment(*skin, String(name));
-			readVertices(input, static_cast<VertexAttachment *>(box), vertexCount);
+			TSharedPtr<BoundingBoxAttachment> box = _attachmentLoader->newBoundingBoxAttachment(*skin, name.buffer());
+			readVertices(input, static_cast<VertexAttachment *>(box.Get()), vertexCount);
 			if (nonessential) {
 				/* Skip color. */
 				readInt(input);
@@ -527,17 +537,17 @@ Attachment *SkeletonBinary::readAttachment(DataInput *input, Skin *skin, int slo
 		}
 		case AttachmentType_Mesh: {
 			int vertexCount;
-			MeshAttachment *mesh;
+			TSharedPtr<MeshAttachment> mesh;
 			String path(readStringRef(input, skeletonData));
 			if (path.isEmpty()) path = name;
 
-			mesh = _attachmentLoader->newMeshAttachment(*skin, String(name), String(path));
+		   mesh = _attachmentLoader->newMeshAttachment(*skin, name.buffer(), path.buffer());
 			mesh->_path = path;
 			readColor(input, mesh->getColor());
 			vertexCount = readVarint(input, true);
 			readFloatArray(input, vertexCount << 1, 1, mesh->getRegionUVs());
 			readShortArray(input, mesh->getTriangles());
-			readVertices(input, static_cast<VertexAttachment *>(mesh), vertexCount);
+			readVertices(input, mesh.Get(), vertexCount);
 			mesh->updateUVs();
 			mesh->_hullLength = readVarint(input, true) << 1;
 			if (nonessential) {
@@ -555,7 +565,7 @@ Attachment *SkeletonBinary::readAttachment(DataInput *input, Skin *skin, int slo
 			String path(readStringRef(input, skeletonData));
 			if (path.isEmpty()) path = name;
 
-			MeshAttachment *mesh = _attachmentLoader->newMeshAttachment(*skin, String(name), String(path));
+			TSharedPtr<MeshAttachment> mesh = _attachmentLoader->newMeshAttachment(*skin, name.buffer(), path.buffer());
 			mesh->_path = path;
 			readColor(input, mesh->getColor());
 			String skinName(readStringRef(input, skeletonData));
@@ -566,17 +576,17 @@ Attachment *SkeletonBinary::readAttachment(DataInput *input, Skin *skin, int slo
 				mesh->_height = readFloat(input) * _scale;
 			}
 
-			LinkedMesh *linkedMesh = new(__FILE__, __LINE__) LinkedMesh(mesh, String(skinName), slotIndex,
+			LinkedMesh *linkedMesh = new  LinkedMesh(mesh.Get(), String(skinName), slotIndex,
 																		String(parent), inheritDeform);
 			_linkedMeshes.add(linkedMesh);
 			return mesh;
 		}
 		case AttachmentType_Path: {
-			PathAttachment *path = _attachmentLoader->newPathAttachment(*skin, String(name));
+			TSharedPtr<PathAttachment> path = _attachmentLoader->newPathAttachment(*skin, name.buffer());
 			path->_closed = readBoolean(input);
 			path->_constantSpeed = readBoolean(input);
 			int vertexCount = readVarint(input, true);
-			readVertices(input, static_cast<VertexAttachment *>(path), vertexCount);
+			readVertices(input, static_cast<VertexAttachment *>(path.Get()), vertexCount);
 			int lengthsLength = vertexCount / 3;
 			path->_lengths.setSize(lengthsLength, 0);
 			for (int i = 0; i < lengthsLength; ++i) {
@@ -590,7 +600,7 @@ Attachment *SkeletonBinary::readAttachment(DataInput *input, Skin *skin, int slo
 			return path;
 		}
 		case AttachmentType_Point: {
-			PointAttachment *point = _attachmentLoader->newPointAttachment(*skin, String(name));
+			TSharedPtr<PointAttachment> point = _attachmentLoader->newPointAttachment(*skin, name.buffer());
 			point->_rotation = readFloat(input);
 			point->_x = readFloat(input) * _scale;
 			point->_y = readFloat(input) * _scale;
@@ -605,8 +615,8 @@ Attachment *SkeletonBinary::readAttachment(DataInput *input, Skin *skin, int slo
 		case AttachmentType_Clipping: {
 			int endSlotIndex = readVarint(input, true);
 			int vertexCount = readVarint(input, true);
-			ClippingAttachment *clip = _attachmentLoader->newClippingAttachment(*skin, name);
-			readVertices(input, static_cast<VertexAttachment *>(clip), vertexCount);
+			TSharedPtr<ClippingAttachment> clip = _attachmentLoader->newClippingAttachment(*skin, name.buffer());
+			readVertices(input, static_cast<VertexAttachment *>(clip.Get()), vertexCount);
 			clip->_endSlot = skeletonData->_slots[endSlotIndex];
 			if (nonessential) {
 				/* Skip color. */
@@ -630,7 +640,7 @@ void SkeletonBinary::readVertices(DataInput *input, VertexAttachment *attachment
 	}
 
 	Vector<float> &vertices = attachment->getVertices();
-	Vector<size_t> &bones = attachment->getBones();
+	Vector<int32> &bones = attachment->getBones();
 	vertices.ensureCapacity(verticesLength * 3 * 3);
 	bones.ensureCapacity(verticesLength * 3);
 
@@ -685,19 +695,19 @@ Animation *SkeletonBinary::readAnimation(const String &name, DataInput *input, S
 			int frameCount = readVarint(input, true);
 			switch (timelineType) {
 				case SLOT_ATTACHMENT: {
-					AttachmentTimeline *timeline = new(__FILE__, __LINE__) AttachmentTimeline(frameCount);
+					AttachmentTimeline *timeline = new AttachmentTimeline(frameCount);
 					timeline->_slotIndex = slotIndex;
 					for (int frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
 						float time = readFloat(input);
 						String attachmentName(readStringRef(input, skeletonData));
-						timeline->setFrame(frameIndex, time, attachmentName);
+						timeline->setFrame(frameIndex, time, attachmentName.buffer());
 					}
 					timelines.add(timeline);
 					duration = MathUtil::max(duration, timeline->_frames[frameCount - 1]);
 					break;
 				}
 				case SLOT_COLOR: {
-					ColorTimeline *timeline = new(__FILE__, __LINE__) ColorTimeline(frameCount);
+					ColorTimeline *timeline = new ColorTimeline(frameCount);
 					timeline->_slotIndex = slotIndex;
 					for (int frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
 						float time = readFloat(input);
@@ -716,7 +726,7 @@ Animation *SkeletonBinary::readAnimation(const String &name, DataInput *input, S
 					break;
 				}
 				case SLOT_TWO_COLOR: {
-					TwoColorTimeline *timeline = new(__FILE__, __LINE__) TwoColorTimeline(frameCount);
+					TwoColorTimeline *timeline = new TwoColorTimeline(frameCount);
 					timeline->_slotIndex = slotIndex;
 					for (int frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
 						float time = readFloat(input);
@@ -741,7 +751,7 @@ Animation *SkeletonBinary::readAnimation(const String &name, DataInput *input, S
 				}
 				default: {
 					ContainerUtil::cleanUpVectorOfPointers(timelines);
-					setError("Invalid timeline type for a slot: ", skeletonData->_slots[slotIndex]->_name.buffer());
+					setError("Invalid timeline type for a slot: ", TCHAR_TO_UTF8(*skeletonData->_slots[slotIndex]->_name));
 					return NULL;
 				}
 			}
@@ -756,7 +766,7 @@ Animation *SkeletonBinary::readAnimation(const String &name, DataInput *input, S
 			int frameCount = readVarint(input, true);
 			switch (timelineType) {
 				case BONE_ROTATE: {
-					RotateTimeline *timeline = new(__FILE__, __LINE__) RotateTimeline(frameCount);
+					RotateTimeline *timeline = new RotateTimeline(frameCount);
 					timeline->_boneIndex = boneIndex;
 					for (int frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
 						float time = readFloat(input);
@@ -776,11 +786,11 @@ Animation *SkeletonBinary::readAnimation(const String &name, DataInput *input, S
 					TranslateTimeline *timeline;
 					float timelineScale = 1;
 					if (timelineType == BONE_SCALE) {
-						timeline = new(__FILE__, __LINE__) ScaleTimeline(frameCount);
+						timeline = new ScaleTimeline(frameCount);
 					} else if (timelineType == BONE_SHEAR) {
-						timeline = new(__FILE__, __LINE__) ShearTimeline(frameCount);
+						timeline = new ShearTimeline(frameCount);
 					} else {
-						timeline = new(__FILE__, __LINE__) TranslateTimeline(frameCount);
+						timeline = new TranslateTimeline(frameCount);
 						timelineScale = scale;
 					}
 					timeline->_boneIndex = boneIndex;
@@ -800,7 +810,7 @@ Animation *SkeletonBinary::readAnimation(const String &name, DataInput *input, S
 				}
 				default: {
 					ContainerUtil::cleanUpVectorOfPointers(timelines);
-					setError("Invalid timeline type for a bone: ", skeletonData->_bones[boneIndex]->_name.buffer());
+					setError("Invalid timeline type for a bone: ", TCHAR_TO_UTF8(*skeletonData->_bones[boneIndex]->_name.ToString()));
 					return NULL;
 				}
 			}
@@ -811,7 +821,7 @@ Animation *SkeletonBinary::readAnimation(const String &name, DataInput *input, S
 	for (int i = 0, n = readVarint(input, true); i < n; ++i) {
 		int index = readVarint(input, true);
 		int frameCount = readVarint(input, true);
-		IkConstraintTimeline *timeline = new(__FILE__, __LINE__) IkConstraintTimeline(frameCount);
+		IkConstraintTimeline *timeline = new IkConstraintTimeline(frameCount);
 		timeline->_ikConstraintIndex = index;
 		for (int frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
 			float time = readFloat(input);
@@ -833,7 +843,7 @@ Animation *SkeletonBinary::readAnimation(const String &name, DataInput *input, S
 	for (int i = 0, n = readVarint(input, true); i < n; ++i) {
 		int index = readVarint(input, true);
 		int frameCount = readVarint(input, true);
-		TransformConstraintTimeline *timeline = new(__FILE__, __LINE__) TransformConstraintTimeline(frameCount);
+		TransformConstraintTimeline *timeline = new TransformConstraintTimeline(frameCount);
 		timeline->_transformConstraintIndex = index;
 		for (int frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
 			float time = readFloat(input);
@@ -863,13 +873,13 @@ Animation *SkeletonBinary::readAnimation(const String &name, DataInput *input, S
 					PathConstraintPositionTimeline *timeline;
 					float timelineScale = 1;
 					if (timelineType == PATH_SPACING) {
-						timeline = new(__FILE__, __LINE__) PathConstraintSpacingTimeline(frameCount);
+						timeline = new PathConstraintSpacingTimeline(frameCount);
 
 						if (data->_spacingMode == SpacingMode_Length || data->_spacingMode == SpacingMode_Fixed) {
 							timelineScale = scale;
 						}
 					} else {
-						timeline = new(__FILE__, __LINE__) PathConstraintPositionTimeline(frameCount);
+						timeline = new PathConstraintPositionTimeline(frameCount);
 
 						if (data->_positionMode == PositionMode_Fixed) {
 							timelineScale = scale;
@@ -890,7 +900,7 @@ Animation *SkeletonBinary::readAnimation(const String &name, DataInput *input, S
 					break;
 				}
 				case PATH_MIX: {
-					PathConstraintMixTimeline *timeline = new(__FILE__, __LINE__) PathConstraintMixTimeline(frameCount);
+					PathConstraintMixTimeline *timeline = new PathConstraintMixTimeline(frameCount);
 
 					timeline->_pathConstraintIndex = index;
 					for (int frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
@@ -913,12 +923,12 @@ Animation *SkeletonBinary::readAnimation(const String &name, DataInput *input, S
 
 	// Deform timelines.
 	for (int i = 0, n = readVarint(input, true); i < n; ++i) {
-		Skin *skin = skeletonData->_skins[readVarint(input, true)];
+		TSharedPtr<Skin> skin = skeletonData->_skins[readVarint(input, true)];
 		for (int ii = 0, nn = readVarint(input, true); ii < nn; ++ii) {
 			int slotIndex = readVarint(input, true);
 			for (int iii = 0, nnn = readVarint(input, true); iii < nnn; iii++) {
 				const char *attachmentName = readStringRef(input, skeletonData);
-				Attachment *baseAttachment = skin->getAttachment(slotIndex, String(attachmentName));
+				TSharedPtr<Attachment> baseAttachment = skin->getAttachment(slotIndex, attachmentName);
 
 				if (!baseAttachment) {
 					ContainerUtil::cleanUpVectorOfPointers(timelines);
@@ -926,28 +936,29 @@ Animation *SkeletonBinary::readAnimation(const String &name, DataInput *input, S
 					return NULL;
 				}
 
-				VertexAttachment *attachment = static_cast<VertexAttachment *>(baseAttachment);
+
+				TSharedPtr<VertexAttachment> attachment = StaticCastSharedPtr<VertexAttachment> (baseAttachment);
 
 				bool weighted = attachment->_bones.size() > 0;
 				Vector<float> &vertices = attachment->_vertices;
-				size_t deformLength = weighted ? vertices.size() / 3 * 2
+				int32 deformLength = weighted ? vertices.size() / 3 * 2
 											: vertices.size();
 
-				size_t frameCount = (size_t)readVarint(input, true);
+				int32 frameCount = (int32)readVarint(input, true);
 
-				DeformTimeline *timeline = new(__FILE__, __LINE__) DeformTimeline(frameCount);
+				DeformTimeline *timeline = new DeformTimeline(frameCount);
 
 				timeline->_slotIndex = slotIndex;
-				timeline->_attachment = attachment;
+				timeline->_attachment = attachment.Get();
 
-				for (size_t frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
+				for (int32 frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
 					float time = readFloat(input);
 					Vector<float> deform;
-					size_t end = (size_t)readVarint(input, true);
+					int32 end = (int32)readVarint(input, true);
 					if (end == 0) {
 						if (weighted) {
 							deform.setSize(deformLength, 0);
-							for (size_t iiii = 0; iiii < deformLength; ++iiii) {
+							for (int32 iiii = 0; iiii < deformLength; ++iiii) {
 								deform[iiii] = 0;
 							}
 						} else {
@@ -955,20 +966,20 @@ Animation *SkeletonBinary::readAnimation(const String &name, DataInput *input, S
 						}
 					} else {
 						deform.setSize(deformLength, 0);
-						size_t start = (size_t)readVarint(input, true);
+						int32 start = (int32)readVarint(input, true);
 						end += start;
 						if (scale == 1) {
-							for (size_t v = start; v < end; ++v) {
+							for (int32 v = start; v < end; ++v) {
 								deform[v] = readFloat(input);
 							}
 						} else {
-							for (size_t v = start; v < end; ++v) {
+							for (int32 v = start; v < end; ++v) {
 								deform[v] = readFloat(input) * scale;
 							}
 						}
 
 						if (!weighted) {
-							for (size_t v = 0, vn = deform.size(); v < vn; ++v) {
+							for (int32 v = 0, vn = deform.size(); v < vn; ++v) {
 								deform[v] += vertices[v];
 							}
 						}
@@ -987,14 +998,14 @@ Animation *SkeletonBinary::readAnimation(const String &name, DataInput *input, S
 	}
 
 	// Draw order timeline.
-	size_t drawOrderCount = (size_t)readVarint(input, true);
+	int32 drawOrderCount = (int32)readVarint(input, true);
 	if (drawOrderCount > 0) {
-		DrawOrderTimeline *timeline = new(__FILE__, __LINE__) DrawOrderTimeline(drawOrderCount);
+		DrawOrderTimeline *timeline = new DrawOrderTimeline(drawOrderCount);
 
-		size_t slotCount = skeletonData->_slots.size();
-		for (size_t i = 0; i < drawOrderCount; ++i) {
+		int32 slotCount = skeletonData->_slots.size();
+		for (int32 i = 0; i < drawOrderCount; ++i) {
 			float time = readFloat(input);
-			size_t offsetCount = (size_t)readVarint(input, true);
+			int32 offsetCount = (int32)readVarint(input, true);
 
 			Vector<int> drawOrder;
 			drawOrder.setSize(slotCount, 0);
@@ -1004,16 +1015,16 @@ Animation *SkeletonBinary::readAnimation(const String &name, DataInput *input, S
 
 			Vector<int> unchanged;
 			unchanged.setSize(slotCount - offsetCount, 0);
-			size_t originalIndex = 0, unchangedIndex = 0;
-			for (size_t ii = 0; ii < offsetCount; ++ii) {
-				size_t slotIndex = (size_t)readVarint(input, true);
+			int32 originalIndex = 0, unchangedIndex = 0;
+			for (int32 ii = 0; ii < offsetCount; ++ii) {
+				int32 slotIndex = (int32)readVarint(input, true);
 				// Collect unchanged items.
 				while (originalIndex != slotIndex) {
 					unchanged[unchangedIndex++] = originalIndex++;
 				}
 				// Set changed items.
-				size_t index = originalIndex;
-				drawOrder[index + (size_t)readVarint(input, true)] = originalIndex++;
+				int32 index = originalIndex;
+				drawOrder[index + (int32)readVarint(input, true)] = originalIndex++;
 			}
 
 			// Collect remaining unchanged items.
@@ -1036,12 +1047,12 @@ Animation *SkeletonBinary::readAnimation(const String &name, DataInput *input, S
 	// Event timeline.
 	int eventCount = readVarint(input, true);
 	if (eventCount > 0) {
-		EventTimeline *timeline = new(__FILE__, __LINE__) EventTimeline(eventCount);
+		EventTimeline *timeline = new EventTimeline(eventCount);
 
 		for (int i = 0; i < eventCount; ++i) {
 			float time = readFloat(input);
 			EventData *eventData = skeletonData->_events[readVarint(input, true)];
-			Event *event = new(__FILE__, __LINE__) Event(time, *eventData);
+			Event *event = new Event(time, *eventData);
 
 			event->_intValue = readVarint(input, false);
 			event->_floatValue = readFloat(input);
@@ -1063,7 +1074,7 @@ Animation *SkeletonBinary::readAnimation(const String &name, DataInput *input, S
 		duration = MathUtil::max(duration, timeline->_frames[eventCount - 1]);
 	}
 
-	return new(__FILE__, __LINE__) Animation(String(name), timelines, duration);
+	return new Animation(String(name), timelines, duration);
 }
 
 void SkeletonBinary::readCurve(DataInput *input, int frameIndex, CurveTimeline *timeline) {

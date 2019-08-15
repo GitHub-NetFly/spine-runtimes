@@ -1,35 +1,34 @@
-/******************************************************************************
- * Spine Runtimes License Agreement
- * Last updated May 1, 2019. Replaces all prior versions.
- *
- * Copyright (c) 2013-2019, Esoteric Software LLC
- *
- * Integration of the Spine Runtimes into software or otherwise creating
- * derivative works of the Spine Runtimes is permitted under the terms and
- * conditions of Section 2 of the Spine Editor License Agreement:
- * http://esotericsoftware.com/spine-editor-license
- *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
- * "Products"), provided that each user of the Products must obtain their own
- * Spine Editor license and redistribution of the Products in any form must
- * include this license and copyright notice.
- *
- * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE LLC "AS IS" AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
- * NO EVENT SHALL ESOTERIC SOFTWARE LLC BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS
- * INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *****************************************************************************/
+﻿/******************************************************************************
+* Spine Runtimes Software License v2.5
+*
+* Copyright (c) 2013-2016, Esoteric Software
+* All rights reserved.
+*
+* You are granted a perpetual, non-exclusive, non-sublicensable, and
+* non-transferable license to use, install, execute, and perform the Spine
+* Runtimes software and derivative works solely for personal or internal
+* use. Without the written permission of Esoteric Software (see Section 2 of
+* the Spine Software License Agreement), you may not (a) modify, translate,
+* adapt, or develop new applications using the Spine Runtimes or otherwise
+* create derivative works or improvements of the Spine Runtimes or (b) remove,
+* delete, alter, or obscure any trademarks or any copyright, trademark, patent,
+* or other intellectual property or proprietary rights notices on or in the
+* Software, including any copy thereof. Redistributions in binary or source
+* form must include this license and terms.
+*
+* THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE "AS IS" AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL ESOTERIC SOFTWARE BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS INTERRUPTION, OR LOSS OF
+* USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+* IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+* POSSIBILITY OF SUCH DAMAGE.
+*****************************************************************************/
 
-#ifdef SPINE_UE4
-#include "SpinePluginPrivatePCH.h"
-#endif
+
 
 #include <spine/Skeleton.h>
 
@@ -55,8 +54,8 @@
 
 using namespace spine;
 
-Skeleton::Skeleton(SkeletonData *skeletonData) :
-		_data(skeletonData),
+Skeleton::Skeleton(TSharedRef<SkeletonData> InSkeletonData) :
+		_data(InSkeletonData),
 		_skin(NULL),
 		_color(1, 1, 1, 1),
 		_time(0),
@@ -65,56 +64,57 @@ Skeleton::Skeleton(SkeletonData *skeletonData) :
 		_x(0),
 		_y(0) {
 	_bones.ensureCapacity(_data->getBones().size());
-	for (size_t i = 0; i < _data->getBones().size(); ++i) {
+	for (int32 i = 0; i < _data->getBones().size(); ++i) {
 		BoneData *data = _data->getBones()[i];
 
 		Bone *bone;
 		if (data->getParent() == NULL) {
-			bone = new(__FILE__, __LINE__) Bone(*data, *this, NULL);
+			bone = new Bone(*data, *this, NULL);
 		} else {
 			Bone *parent = _bones[data->getParent()->getIndex()];
-			bone = new(__FILE__, __LINE__) Bone(*data, *this, parent);
+			bone = new Bone(*data, *this, parent);
 			parent->getChildren().add(bone);
 		}
 
 		_bones.add(bone);
 	}
 
-	_slots.ensureCapacity(_data->getSlots().size());
-	_drawOrder.ensureCapacity(_data->getSlots().size());
-	for (size_t i = 0; i < _data->getSlots().size(); ++i) {
+	_slots.Reserve(_data->getSlots().size());
+
+	_drawOrder.Reserve(_data->getSlots().size());
+	for (int32 i = 0; i < _data->getSlots().size(); ++i) {
 		SlotData *data = _data->getSlots()[i];
 
 		Bone *bone = _bones[data->getBoneData().getIndex()];
-		Slot *slot = new(__FILE__, __LINE__) Slot(*data, *bone);
+		TSharedPtr<Slot> slot = MakeShared<Slot>(*data, *bone);
 
-		_slots.add(slot);
-		_drawOrder.add(slot);
+		_slots.Add(slot);
+		_drawOrder.Add(slot);
 	}
 
 	_ikConstraints.ensureCapacity(_data->getIkConstraints().size());
-	for (size_t i = 0; i < _data->getIkConstraints().size(); ++i) {
+	for (int32 i = 0; i < _data->getIkConstraints().size(); ++i) {
 		IkConstraintData *data = _data->getIkConstraints()[i];
 
-		IkConstraint *constraint = new(__FILE__, __LINE__) IkConstraint(*data, *this);
+		IkConstraint *constraint = new IkConstraint(*data, *this);
 
 		_ikConstraints.add(constraint);
 	}
 
 	_transformConstraints.ensureCapacity(_data->getTransformConstraints().size());
-	for (size_t i = 0; i < _data->getTransformConstraints().size(); ++i) {
+	for (int32 i = 0; i < _data->getTransformConstraints().size(); ++i) {
 		TransformConstraintData *data = _data->getTransformConstraints()[i];
 
-		TransformConstraint *constraint = new(__FILE__, __LINE__) TransformConstraint(*data, *this);
+		TransformConstraint *constraint = new TransformConstraint(*data, *this);
 
 		_transformConstraints.add(constraint);
 	}
 
 	_pathConstraints.ensureCapacity(_data->getPathConstraints().size());
-	for (size_t i = 0; i < _data->getPathConstraints().size(); ++i) {
+	for (int32 i = 0; i < _data->getPathConstraints().size(); ++i) {
 		PathConstraintData *data = _data->getPathConstraints()[i];
 
-		PathConstraint *constraint = new(__FILE__, __LINE__) PathConstraint(*data, *this);
+		PathConstraint *constraint = new PathConstraint(*data, *this);
 
 		_pathConstraints.add(constraint);
 	}
@@ -124,7 +124,7 @@ Skeleton::Skeleton(SkeletonData *skeletonData) :
 
 Skeleton::~Skeleton() {
 	ContainerUtil::cleanUpVectorOfPointers(_bones);
-	ContainerUtil::cleanUpVectorOfPointers(_slots);
+	
 	ContainerUtil::cleanUpVectorOfPointers(_ikConstraints);
 	ContainerUtil::cleanUpVectorOfPointers(_transformConstraints);
 	ContainerUtil::cleanUpVectorOfPointers(_pathConstraints);
@@ -152,16 +152,16 @@ void Skeleton::updateCache() {
 		}
 	}
 
-	size_t ikCount = _ikConstraints.size();
-	size_t transformCount = _transformConstraints.size();
-	size_t pathCount = _pathConstraints.size();
+	int32 ikCount = _ikConstraints.size();
+	int32 transformCount = _transformConstraints.size();
+	int32 pathCount = _pathConstraints.size();
 
-	size_t constraintCount = ikCount + transformCount + pathCount;
+	int32 constraintCount = ikCount + transformCount + pathCount;
 
-	size_t i = 0;
+	int32 i = 0;
 	continue_outer:
 	for (; i < constraintCount; ++i) {
-		for (size_t ii = 0; ii < ikCount; ++ii) {
+		for (int32 ii = 0; ii < ikCount; ++ii) {
 			IkConstraint *constraint = _ikConstraints[ii];
 			if (constraint->getData().getOrder() == i) {
 				sortIkConstraint(constraint);
@@ -170,7 +170,7 @@ void Skeleton::updateCache() {
 			}
 		}
 
-		for (size_t ii = 0; ii < transformCount; ++ii) {
+		for (int32 ii = 0; ii < transformCount; ++ii) {
 			TransformConstraint *constraint = _transformConstraints[ii];
 			if (constraint->getData().getOrder() == i) {
 				sortTransformConstraint(constraint);
@@ -179,7 +179,7 @@ void Skeleton::updateCache() {
 			}
 		}
 
-		for (size_t ii = 0; ii < pathCount; ++ii) {
+		for (int32 ii = 0; ii < pathCount; ++ii) {
 			PathConstraint *constraint = _pathConstraints[ii];
 			if (constraint->getData().getOrder() == i) {
 				sortPathConstraint(constraint);
@@ -189,17 +189,17 @@ void Skeleton::updateCache() {
 		}
 	}
 
-	size_t n = _bones.size();
+	int32 n = _bones.size();
 	for (i = 0; i < n; ++i) {
 		sortBone(_bones[i]);
 	}
 }
 
 void Skeleton::printUpdateCache() {
-	for (size_t i = 0; i < _updateCache.size(); i++) {
+	for (int32 i = 0; i < _updateCache.size(); i++) {
 		Updatable *updatable = _updateCache[i];
 		if (updatable->getRTTI().isExactly(Bone::rtti)) {
-			printf("bone %s\n", ((Bone *) updatable)->getData().getName().buffer());
+			printf("bone %s\n", TCHAR_TO_UTF8(*((Bone *)updatable)->getData().getName().ToString()));
 		} else if (updatable->getRTTI().isExactly(TransformConstraint::rtti)) {
 			printf("transform constraint %s\n", ((TransformConstraint *) updatable)->getData().getName().buffer());
 		} else if (updatable->getRTTI().isExactly(IkConstraint::rtti)) {
@@ -211,7 +211,7 @@ void Skeleton::printUpdateCache() {
 }
 
 void Skeleton::updateWorldTransform() {
-	for (size_t i = 0, n = _updateCacheReset.size(); i < n; ++i) {
+	for (int32 i = 0, n = _updateCacheReset.size(); i < n; ++i) {
 		Bone *boneP = _updateCacheReset[i];
 		Bone &bone = *boneP;
 		bone._ax = bone._x;
@@ -224,7 +224,7 @@ void Skeleton::updateWorldTransform() {
 		bone._appliedValid = true;
 	}
 
-	for (size_t i = 0, n = _updateCache.size(); i < n; ++i) {
+	for (int32 i = 0, n = _updateCache.size(); i < n; ++i) {
 		_updateCache[i]->update();
 	}
 }
@@ -235,11 +235,11 @@ void Skeleton::setToSetupPose() {
 }
 
 void Skeleton::setBonesToSetupPose() {
-	for (size_t i = 0, n = _bones.size(); i < n; ++i) {
+	for (int32 i = 0, n = _bones.size(); i < n; ++i) {
 		_bones[i]->setToSetupPose();
 	}
 
-	for (size_t i = 0, n = _ikConstraints.size(); i < n; ++i) {
+	for (int32 i = 0, n = _ikConstraints.size(); i < n; ++i) {
 		IkConstraint *constraintP = _ikConstraints[i];
 		IkConstraint &constraint = *constraintP;
 
@@ -250,7 +250,7 @@ void Skeleton::setBonesToSetupPose() {
 		constraint._softness = constraint._data._softness;
 	}
 
-	for (size_t i = 0, n = _transformConstraints.size(); i < n; ++i) {
+	for (int32 i = 0, n = _transformConstraints.size(); i < n; ++i) {
 		TransformConstraint *constraintP = _transformConstraints[i];
 		TransformConstraint &constraint = *constraintP;
 		TransformConstraintData &constraintData = constraint._data;
@@ -261,7 +261,7 @@ void Skeleton::setBonesToSetupPose() {
 		constraint._shearMix = constraintData._shearMix;
 	}
 
-	for (size_t i = 0, n = _pathConstraints.size(); i < n; ++i) {
+	for (int32 i = 0, n = _pathConstraints.size(); i < n; ++i) {
 		PathConstraint *constraintP = _pathConstraints[i];
 		PathConstraint &constraint = *constraintP;
 		PathConstraintData &constraintData = constraint._data;
@@ -273,56 +273,84 @@ void Skeleton::setBonesToSetupPose() {
 	}
 }
 
-void Skeleton::setSlotsToSetupPose() {
-	_drawOrder.clear();
-	for (size_t i = 0, n = _slots.size(); i < n; ++i) {
-		_drawOrder.add(_slots[i]);
+void Skeleton::setSlotsToSetupPose()
+{
+	_drawOrder.Empty();
+
+	for (int32 i = 0, n = _slots.Num(); i < n; ++i) {
+		_drawOrder.Add(_slots[i]);
 	}
 
-	for (size_t i = 0, n = _slots.size(); i < n; ++i) {
+	for (int32 i = 0, n = _slots.Num(); i < n; ++i) {
 		_slots[i]->setToSetupPose();
 	}
 }
 
-Bone *Skeleton::findBone(const String &boneName) {
+Bone *Skeleton::findBone(const FName &boneName)
+{
 	return ContainerUtil::findWithDataName(_bones, boneName);
 }
 
-int Skeleton::findBoneIndex(const String &boneName) {
+int Skeleton::findBoneIndex(const FName &boneName) {
 	return ContainerUtil::findIndexWithDataName(_bones, boneName);
 }
 
-Slot *Skeleton::findSlot(const String &slotName) {
-	return ContainerUtil::findWithDataName(_slots, slotName);
+TSharedPtr<Slot> Skeleton::findSlot(const FString &slotName)
+{
+	auto FoundPtr = _slots.FindByPredicate([&slotName](TSharedPtr<Slot> InSlot) { return InSlot->getData().getName() == slotName;  });
+
+	return FoundPtr ? *FoundPtr : nullptr;
 }
 
-int Skeleton::findSlotIndex(const String &slotName) {
-	return ContainerUtil::findIndexWithDataName(_slots, slotName);
+int32 Skeleton::findSlotIndex(const FString &slotName)
+{
+
+	for (int32 i = 0, len = _slots.Num(); i < len; ++i) 
+	{
+		if (_slots[i]->getData().getName() == slotName)
+		{
+			return i;
+		}
+	}
+
+	return INDEX_NONE;
 }
 
-void Skeleton::setSkin(const String &skinName) {
-	Skin *foundSkin = _data->findSkin(skinName);
+void Skeleton::setSkin(const FString &skinName) 
+{
+	TSharedPtr<Skin> foundSkin = _data->findSkin(skinName);
 
 	assert(foundSkin != NULL);
 
 	setSkin(foundSkin);
 }
 
-void Skeleton::setSkin(Skin *newSkin) {
-	if (_skin == newSkin) return;
-	if (newSkin != NULL) {
-		if (_skin != NULL) {
+void Skeleton::setSkin(TSharedPtr<Skin> newSkin)
+{
+	if (_skin== newSkin)
+	{
+		return;
+	}
+
+	if (newSkin)
+	{
+		if (_skin)
+		{
 			Skeleton &thisRef = *this;
 			newSkin->attachAll(thisRef, *_skin);
-		} else {
-			for (size_t i = 0, n = _slots.size(); i < n; ++i) {
-				Slot *slotP = _slots[i];
+		}
+		else 
+		{
+			for (int32 i = 0, n = _slots.Num(); i < n; ++i) 
+			{
+				TSharedPtr<Slot> slotP = _slots[i];
 				Slot &slot = *slotP;
-				const String &name = slot._data.getAttachmentName();
-				if (name.length() > 0) {
-					Attachment *attachment = newSkin->getAttachment(i, name);
-					if (attachment != NULL) {
-						slot.setAttachment(attachment);
+				const FString &name = slot._data.getAttachmentName();
+				if (!name.IsEmpty()) 
+				{
+					TSharedPtr<Attachment> attachment = newSkin->getAttachment(i, name);
+					if (attachment) {
+						slot.setAttachment(attachment.Get());
 					}
 				}
 			}
@@ -333,43 +361,46 @@ void Skeleton::setSkin(Skin *newSkin) {
 	updateCache();
 }
 
-Attachment *Skeleton::getAttachment(const String &slotName, const String &attachmentName) {
+TSharedPtr<Attachment> Skeleton::getAttachment(const FString &slotName, const FString &attachmentName) {
 	return getAttachment(_data->findSlotIndex(slotName), attachmentName);
 }
 
-Attachment *Skeleton::getAttachment(int slotIndex, const String &attachmentName) {
+TSharedPtr<Attachment> Skeleton::getAttachment(int slotIndex, const FString &attachmentName) {
 	assert(attachmentName.length() > 0);
 
-	if (_skin != NULL) {
-		Attachment *attachment = _skin->getAttachment(slotIndex, attachmentName);
-		if (attachment != NULL) {
+	if (_skin ) 
+	{
+		TSharedPtr<Attachment> attachment = _skin->getAttachment(slotIndex, attachmentName);
+		if (attachment )
+		{
 			return attachment;
 		}
 	}
 
-	return _data->getDefaultSkin() != NULL ? _data->getDefaultSkin()->getAttachment(slotIndex, attachmentName) : NULL;
+	return _data->getDefaultSkin()  ? _data->getDefaultSkin()->getAttachment(slotIndex, attachmentName) : NULL;
 }
 
-void Skeleton::setAttachment(const String &slotName, const String &attachmentName) {
+void Skeleton::setAttachment(const FString &slotName, const FString &attachmentName) {
 	assert(slotName.length() > 0);
 
-	for (size_t i = 0, n = _slots.size(); i < n; ++i) {
-		Slot *slot = _slots[i];
+	for (int32 i = 0, n = _slots.Num(); i < n; ++i) {
+		TSharedPtr<Slot> slot = _slots[i];
 		if (slot->_data.getName() == slotName) {
-			Attachment *attachment = NULL;
-			if (attachmentName.length() > 0) {
+			TSharedPtr<Attachment> attachment ;
+			if (!attachmentName.IsEmpty()) 
+			{
 				attachment = getAttachment(i, attachmentName);
 
 				assert(attachment != NULL);
 			}
 
-			slot->setAttachment(attachment);
+			slot->setAttachment(attachment.Get());
 
 			return;
 		}
 	}
 
-	printf("Slot not found: %s", slotName.buffer());
+	printf("Slot not found: %s", TCHAR_TO_UTF8(*slotName));
 
 	assert(false);
 }
@@ -377,7 +408,7 @@ void Skeleton::setAttachment(const String &slotName, const String &attachmentNam
 IkConstraint *Skeleton::findIkConstraint(const String &constraintName) {
 	assert(constraintName.length() > 0);
 
-	for (size_t i = 0, n = _ikConstraints.size(); i < n; ++i) {
+	for (int32 i = 0, n = _ikConstraints.size(); i < n; ++i) {
 		IkConstraint *ikConstraint = _ikConstraints[i];
 		if (ikConstraint->_data.getName() == constraintName) {
 			return ikConstraint;
@@ -389,7 +420,7 @@ IkConstraint *Skeleton::findIkConstraint(const String &constraintName) {
 TransformConstraint *Skeleton::findTransformConstraint(const String &constraintName) {
 	assert(constraintName.length() > 0);
 
-	for (size_t i = 0, n = _transformConstraints.size(); i < n; ++i) {
+	for (int32 i = 0, n = _transformConstraints.size(); i < n; ++i) {
 		TransformConstraint *transformConstraint = _transformConstraints[i];
 		if (transformConstraint->_data.getName() == constraintName) {
 			return transformConstraint;
@@ -402,7 +433,7 @@ TransformConstraint *Skeleton::findTransformConstraint(const String &constraintN
 PathConstraint *Skeleton::findPathConstraint(const String &constraintName) {
 	assert(constraintName.length() > 0);
 
-	for (size_t i = 0, n = _pathConstraints.size(); i < n; ++i) {
+	for (int32 i = 0, n = _pathConstraints.size(); i < n; ++i) {
 		PathConstraint *constraint = _pathConstraints[i];
 		if (constraint->_data.getName() == constraintName) {
 			return constraint;
@@ -422,8 +453,8 @@ void Skeleton::getBounds(float &outX, float &outY, float &outWidth, float &outHe
 	float maxX = std::numeric_limits<float>::min();
 	float maxY = std::numeric_limits<float>::min();
 
-	for (size_t i = 0; i < _drawOrder.size(); ++i) {
-		Slot *slot = _drawOrder[i];
+	for (size_t i = 0; i < _drawOrder.Num(); ++i) {
+		TSharedPtr<Slot> slot = _drawOrder[i];
 		if (!slot->_bone._active) continue;
 		size_t verticesLength = 0;
 		Attachment *attachment = slot->getAttachment();
@@ -447,7 +478,7 @@ void Skeleton::getBounds(float &outX, float &outY, float &outWidth, float &outHe
 			mesh->computeWorldVertices(*slot, 0, verticesLength, outVertexBuffer, 0);
 		}
 
-		for (size_t ii = 0; ii < verticesLength; ii += 2) {
+		for (int32 ii = 0; ii < verticesLength; ii += 2) {
 			float vx = outVertexBuffer[ii];
 			float vy = outVertexBuffer[ii + 1];
 
@@ -468,7 +499,7 @@ Bone *Skeleton::getRootBone() {
 	return _bones.size() == 0 ? NULL : _bones[0];
 }
 
-SkeletonData *Skeleton::getData() {
+TSharedRef<SkeletonData> Skeleton::getData() {
 	return _data;
 }
 
@@ -480,11 +511,11 @@ Vector<Updatable *> &Skeleton::getUpdateCacheList() {
 	return _updateCache;
 }
 
-Vector<Slot *> &Skeleton::getSlots() {
+TArray<TSharedPtr<Slot>> &Skeleton::getSlots() {
 	return _slots;
 }
 
-Vector<Slot *> &Skeleton::getDrawOrder() {
+TArray<TSharedPtr<Slot>>  &Skeleton::getDrawOrder() {
 	return _drawOrder;
 }
 
@@ -500,7 +531,7 @@ Vector<TransformConstraint *> &Skeleton::getTransformConstraints() {
 	return _transformConstraints;
 }
 
-Skin *Skeleton::getSkin() {
+TSharedPtr<Skin> Skeleton::getSkin() {
 	return _skin;
 }
 
@@ -582,27 +613,27 @@ void Skeleton::sortPathConstraint(PathConstraint *constraint) {
 	Slot *slot = constraint->getTarget();
 	int slotIndex = slot->getData().getIndex();
 	Bone &slotBone = slot->getBone();
-	if (_skin != NULL) sortPathConstraintAttachment(_skin, slotIndex, slotBone);
-	if (_data->_defaultSkin != NULL && _data->_defaultSkin != _skin)
-		sortPathConstraintAttachment(_data->_defaultSkin, slotIndex, slotBone);
-	for (size_t ii = 0, nn = _data->_skins.size(); ii < nn; ii++)
-		sortPathConstraintAttachment(_data->_skins[ii], slotIndex, slotBone);
+	if (_skin ) sortPathConstraintAttachment(_skin.Get(), slotIndex, slotBone);
+	if (_data->_defaultSkin  && _data->_defaultSkin != _skin)
+		sortPathConstraintAttachment(_data->_defaultSkin.Get(), slotIndex, slotBone);
+	for (int32 ii = 0, nn = _data->_skins.Num(); ii < nn; ii++)
+		sortPathConstraintAttachment(_data->_skins[ii].Get(), slotIndex, slotBone);
 
 	Attachment *attachment = slot->getAttachment();
 	if (attachment != NULL && attachment->getRTTI().instanceOf(PathAttachment::rtti))
 		sortPathConstraintAttachment(attachment, slotBone);
 
 	Vector<Bone *> &constrained = constraint->getBones();
-	size_t boneCount = constrained.size();
-	for (size_t i = 0; i < boneCount; ++i) {
+	int32 boneCount = constrained.size();
+	for (int32 i = 0; i < boneCount; ++i) {
 		sortBone(constrained[i]);
 	}
 
 	_updateCache.add(constraint);
 
-	for (size_t i = 0; i < boneCount; i++)
+	for (int32 i = 0; i < boneCount; i++)
 		sortReset(constrained[i]->getChildren());
-	for (size_t i = 0; i < boneCount; i++)
+	for (int32 i = 0; i < boneCount; i++)
 		constrained[i]->_sorted = true;
 }
 
@@ -613,47 +644,47 @@ void Skeleton::sortTransformConstraint(TransformConstraint *constraint) {
 	sortBone(constraint->getTarget());
 
 	Vector<Bone *> &constrained = constraint->getBones();
-	size_t boneCount = constrained.size();
+	int32 boneCount = constrained.size();
 	if (constraint->_data.isLocal()) {
-		for (size_t i = 0; i < boneCount; i++) {
+		for (int32 i = 0; i < boneCount; i++) {
 			Bone *child = constrained[i];
 			sortBone(child->getParent());
 			if (!_updateCache.contains(child)) _updateCacheReset.add(child);
 		}
 	} else {
-		for (size_t i = 0; i < boneCount; ++i) {
+		for (int32 i = 0; i < boneCount; ++i) {
 			sortBone(constrained[i]);
 		}
 	}
 
 	_updateCache.add(constraint);
 
-	for (size_t i = 0; i < boneCount; ++i)
+	for (int32 i = 0; i < boneCount; ++i)
 		sortReset(constrained[i]->getChildren());
-	for (size_t i = 0; i < boneCount; ++i)
+	for (int32 i = 0; i < boneCount; ++i)
 		constrained[i]->_sorted = true;
 }
 
-void Skeleton::sortPathConstraintAttachment(Skin *skin, size_t slotIndex, Bone &slotBone) {
+void Skeleton::sortPathConstraintAttachment(Skin *skin, int32 slotIndex, Bone &slotBone) {
 	Skin::AttachmentMap::Entries attachments = skin->getAttachments();
 
 	while (attachments.hasNext()) {
 		Skin::AttachmentMap::Entry entry = attachments.next();
 		if (entry._slotIndex == slotIndex) {
-			Attachment *value = entry._attachment;
-			sortPathConstraintAttachment(value, slotBone);
+			TSharedPtr<Attachment> value = entry._attachment;
+			sortPathConstraintAttachment(value.Get(), slotBone);
 		}
 	}
 }
 
 void Skeleton::sortPathConstraintAttachment(Attachment *attachment, Bone &slotBone) {
 	if (attachment == NULL || !attachment->getRTTI().instanceOf(PathAttachment::rtti)) return;
-	Vector<size_t> &pathBones = static_cast<PathAttachment *>(attachment)->getBones();
+	Vector<int32> &pathBones = static_cast<PathAttachment *>(attachment)->getBones();
 	if (pathBones.size() == 0)
 		sortBone(&slotBone);
 	else {
-		for (size_t i = 0, n = pathBones.size(); i < n;) {
-			size_t nn = pathBones[i++];
+		for (int32 i = 0, n = pathBones.size(); i < n;) {
+			int32 nn = pathBones[i++];
 			nn += i;
 			while (i < nn) {
 				sortBone(_bones[pathBones[i++]]);
@@ -671,7 +702,7 @@ void Skeleton::sortBone(Bone *bone) {
 }
 
 void Skeleton::sortReset(Vector<Bone *> &bones) {
-	for (size_t i = 0, n = bones.size(); i < n; ++i) {
+	for (int32 i = 0, n = bones.size(); i < n; ++i) {
 		Bone *bone = bones[i];
 		if (!bone->_active) continue;
 		if (bone->_sorted) sortReset(bone->getChildren());

@@ -1,40 +1,55 @@
-/******************************************************************************
- * Spine Runtimes License Agreement
- * Last updated May 1, 2019. Replaces all prior versions.
- *
- * Copyright (c) 2013-2019, Esoteric Software LLC
- *
- * Integration of the Spine Runtimes into software or otherwise creating
- * derivative works of the Spine Runtimes is permitted under the terms and
- * conditions of Section 2 of the Spine Editor License Agreement:
- * http://esotericsoftware.com/spine-editor-license
- *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
- * "Products"), provided that each user of the Products must obtain their own
- * Spine Editor license and redistribution of the Products in any form must
- * include this license and copyright notice.
- *
- * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE LLC "AS IS" AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
- * NO EVENT SHALL ESOTERIC SOFTWARE LLC BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS
- * INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *****************************************************************************/
+﻿
 
 #pragma once
 
-#include "Engine.h"
-#include "spine/spine.h"
+#include "CoreMinimal.h"
+
+#include "GameplayTagContainer.h"
 #include "SpineSkeletonDataAsset.generated.h"
 
+
+namespace spine
+{
+	class Skeleton;
+	class SkeletonData;
+	class AnimationState;
+	class AnimationStateData;
+	class Atlas;
+}
+
+class USpineSkeletonComponent;
+class USpineAtlasAsset;
+class USpineSkeletonDataAsset;
+
+
+struct SPINEPLUGIN_API FSpineSkeletonDataAssetObjectVersion
+{
+	enum Type
+	{
+		// Before any version changes were made
+		BeforeCustomVersionWasAdded = 0,
+		
+		AddAnimEventRemapToGameplayTag,
+		Add_bIsJsonRawData_Flag,
+		Add_bIsValid_RawData_Flag,
+
+		// -----<new versions can be added above this line>-------------------------------------------------
+		VersionPlusOne,
+		LatestVersion = VersionPlusOne - 1
+	}; //
+	
+	
+
+	// The GUID for this custom version number
+	const static FGuid GUID;
+
+	FSpineSkeletonDataAssetObjectVersion() = delete;
+};
+
+
 USTRUCT(BlueprintType, Category = "Spine")
-struct SPINEPLUGIN_API FSpineAnimationStateMixData {
+struct SPINEPLUGIN_API FSpineAnimationStateMixData
+{
 	GENERATED_BODY();
 
 public:	
@@ -48,66 +63,103 @@ public:
 	float Mix = 0;
 };
 
-UCLASS(BlueprintType, ClassGroup=(Spine))
-class SPINEPLUGIN_API USpineSkeletonDataAsset: public UObject {
-	GENERATED_BODY()
-	
+USTRUCT(BlueprintType, Category = "Spine")
+struct FSpineAnimEventPair
+{
+	GENERATED_BODY();
 public:
-	spine::SkeletonData* GetSkeletonData(spine::Atlas* Atlas);
 
-	spine::AnimationStateData* GetAnimationStateData(spine::Atlas* atlas);
-	void SetMix(const FString& from, const FString& to, float mix);
-	float GetMix(const FString& from, const FString& to);
-	
-	FName GetSkeletonDataFileName () const;
-	void SetRawData (TArray<uint8> &Data);
-	
-	virtual void BeginDestroy () override;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	FString EventName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float DefaultMix = 0;
+	FGameplayTag RemapToGameplayEventTag;
+};
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+
+UCLASS(BlueprintType, ClassGroup = (Spine))
+class SPINEPLUGIN_API USpineSkeletonDataAsset : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	TSharedPtr<spine::SkeletonData> GetSpineSkeletonData()const;
+	TSharedPtr<spine::AnimationStateData> GetAnimationStateData() const;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+		float DefaultMix = 0;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TArray<FSpineAnimationStateMixData> MixData;
 
-	UPROPERTY(Transient, VisibleAnywhere)
+	UPROPERTY( VisibleAnywhere)
 	TArray<FString> Bones;
 
-	UPROPERTY(Transient, VisibleAnywhere)
+	UPROPERTY( VisibleAnywhere)
 	TArray<FString> Slots;
 
-	UPROPERTY(Transient, VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere)
+	TArray<FString> Attachments;
+
+	UPROPERTY(VisibleAnywhere)
 	TArray<FString> Skins;
 
-	UPROPERTY(Transient, VisibleAnywhere)
+	UPROPERTY( VisibleAnywhere)
 	TArray<FString> Animations;
 
-	UPROPERTY(Transient, VisibleAnywhere)
+	UPROPERTY( VisibleAnywhere)
 	TArray<FString> Events;
-	
-protected:
-	UPROPERTY()
-	TArray<uint8> rawData;		
-	
-	UPROPERTY()
-	FName skeletonDataFileName;
 
-	spine::SkeletonData* skeletonData;
-	spine::AnimationStateData* animationStateData;
-	spine::Atlas* lastAtlas;
+	UPROPERTY(EditDefaultsOnly, EditFixedSize)
+	TArray<FSpineAnimEventPair> AnimEventSetupArray;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	class USpineAtlasAsset* RelatedAtlasAsset;
 	
-#if WITH_EDITORONLY_DATA
-public:
-	void SetSkeletonDataFileName (const FName &skeletonDataFileName);	 
-	
+	virtual void PostLoad() override;
+
+	static void EnsureFullyLoaded(UObject* Object);
+
 protected:
-	UPROPERTY(VisibleAnywhere, Instanced, Category=ImportSettings)
-	class UAssetImportData* importData;
+	UPROPERTY()
+	TArray<uint8> rawData;	
+
+	/* 指示加载方式是当做json还二进制文件 */
+	UPROPERTY()
+	bool bIsValidJsonRawData = false;
+
+	UPROPERTY()
+	bool bIsValidBinaryRawData = false;
+
 	
-	virtual void PostInitProperties ( ) override;
+	TSharedPtr<spine::SkeletonData> CachedSkeletonData;
+	TSharedPtr<spine::SkeletonData> BuildSkeletonData();
+
+	virtual void PostInitProperties() override;
+	virtual void Serialize(FArchive& Ar) override;
 	virtual void GetAssetRegistryTags(TArray<FAssetRegistryTag>& OutTags) const override;
-	virtual void Serialize (FArchive& Ar) override;
+#if WITH_EDITORONLY_DATA
+
+public:
+	UPROPERTY(EditAnywhere, Instanced, Category = ImportSettings)
+	class UAssetImportData* AssetImportData;
 #endif
 
-	void LoadInfo();
+
+#if WITH_EDITOR
+public:
+	void SetRawData(TArray<uint8> &Data);
+protected:
+
+	void BindEngineCallback();
+
+	bool RegisteredReimportCallback = false;
+
+	void OnAtlasReimport(UObject* InObj);
+	void OnAtlasPostImport(class UFactory* InFactory, UObject* InObj);
+
+	void LoadInfo();	
+	
+	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 };

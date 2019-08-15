@@ -1,33 +1,6 @@
-/******************************************************************************
- * Spine Runtimes License Agreement
- * Last updated May 1, 2019. Replaces all prior versions.
- *
- * Copyright (c) 2013-2019, Esoteric Software LLC
- *
- * Integration of the Spine Runtimes into software or otherwise creating
- * derivative works of the Spine Runtimes is permitted under the terms and
- * conditions of Section 2 of the Spine Editor License Agreement:
- * http://esotericsoftware.com/spine-editor-license
- *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
- * "Products"), provided that each user of the Products must obtain their own
- * Spine Editor license and redistribution of the Products in any form must
- * include this license and copyright notice.
- *
- * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE LLC "AS IS" AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
- * NO EVENT SHALL ESOTERIC SOFTWARE LLC BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS
- * INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *****************************************************************************/
+﻿
 
-#include "SpineEditorPluginPrivatePCH.h"
+#include "SpineSkeletonImportFactory.h"
 
 #include "SpineSkeletonDataAsset.h"
 #include "AssetRegistryModule.h"
@@ -40,9 +13,12 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include"SpineAtlasAsset.h"
+
 #define LOCTEXT_NAMESPACE "Spine"
 
-USpineSkeletonAssetFactory::USpineSkeletonAssetFactory (const FObjectInitializer& objectInitializer): Super(objectInitializer) {
+USpineSkeletonAssetFactory::USpineSkeletonAssetFactory (const FObjectInitializer& objectInitializer): Super(objectInitializer)
+{
 	bCreateNew = false;
 	bEditAfterNew = true;
 	bEditorImport = true;
@@ -60,64 +36,119 @@ bool USpineSkeletonAssetFactory::FactoryCanImport (const FString& Filename) {
 	return true;
 }
 
-void LoadAtlas (const FString& Filename, const FString& TargetPath) {
+
+bool LoadAtlas(const FString& Filename, const FString& TargetPath, USpineAtlasAsset* LoadedAtlasAsset)
+{
+	LoadedAtlasAsset = nullptr;
+
 	FAssetToolsModule& AssetToolsModule = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools");
-	
+
 	FString skelFile = Filename.Replace(TEXT(".skel"), TEXT(".atlas")).Replace(TEXT(".json"), TEXT(".atlas"));
-	if (!FPaths::FileExists(skelFile)) return;
-	
+	if (!FPaths::FileExists(skelFile))
+	{
+		return false;
+	}
+
 	TArray<FString> fileNames;
 	fileNames.Add(skelFile);
-	AssetToolsModule.Get().ImportAssets(fileNames, TargetPath);
+	TArray<UObject*>  ImportedObjects = AssetToolsModule.Get().ImportAssets(fileNames, TargetPath);
+
+	if (ImportedObjects.Num() > 0)
+	{
+		LoadedAtlasAsset = CastChecked<USpineAtlasAsset>(ImportedObjects[0]);
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
-UObject* USpineSkeletonAssetFactory::FactoryCreateFile (UClass * InClass, UObject * InParent, FName InName, EObjectFlags Flags, const FString & Filename, const TCHAR* Parms, FFeedbackContext * Warn, bool& bOutOperationCanceled) {
+UObject* USpineSkeletonAssetFactory::FactoryCreateFile(UClass * InClass, UObject * InParent, FName InName, EObjectFlags Flags, const FString & Filename, const TCHAR* Parms, FFeedbackContext * Warn, bool& bOutOperationCanceled)
+{
 	FString name(InName.ToString());
 	name.Append("-data");
-	
+
 	USpineSkeletonDataAsset* asset = NewObject<USpineSkeletonDataAsset>(InParent, InClass, FName(*name), Flags);
 	TArray<uint8> rawData;
-	if (!FFileHelper::LoadFileToArray(rawData, *Filename, 0)) {
+	if (!FFileHelper::LoadFileToArray(rawData, *Filename, 0)) 
+	{
 		return nullptr;
 	}
-	asset->SetSkeletonDataFileName(FName(*Filename));
+	asset->AssetImportData->UpdateFilenameOnly(Filename);
 	asset->SetRawData(rawData);
-	
-	const FString longPackagePath = FPackageName::GetLongPackagePath(asset->GetOutermost()->GetPathName());
-	LoadAtlas(Filename, longPackagePath);
+
+	if (bIgnoreLoadOtherAsset == false)
+	{
+		const FString longPackagePath = FPackageName::GetLongPackagePath(asset->GetOutermost()->GetPathName());
+		USpineAtlasAsset* LoadedAtlasAsset = nullptr;
+		if (LoadAtlas(Filename, longPackagePath, LoadedAtlasAsset))
+		{
+			asset->RelatedAtlasAsset = LoadedAtlasAsset;
+		}
+	}
+
 	return asset;
 }
 
-bool USpineSkeletonAssetFactory::CanReimport (UObject* Obj, TArray<FString>& OutFilenames) {
+bool USpineSkeletonAssetFactory::CanReimport (UObject* Obj, TArray<FString>& OutFilenames)
+{
 	USpineSkeletonDataAsset* asset = Cast<USpineSkeletonDataAsset>(Obj);
-	if (!asset) return false;
+	if (!asset||!asset->AssetImportData)
+	{
+		return false;
+	}
 	
-	FString filename = asset->GetSkeletonDataFileName().ToString();
+	FString filename = asset->AssetImportData->GetFirstFilename();
 	if (!filename.IsEmpty())
+	{
 		OutFilenames.Add(filename);
+	}
 	
 	return true;
 }
 
-void USpineSkeletonAssetFactory::SetReimportPaths (UObject* Obj, const TArray<FString>& NewReimportPaths) {
+void USpineSkeletonAssetFactory::SetReimportPaths (UObject* Obj, const TArray<FString>& NewReimportPaths)
+{
 	USpineSkeletonDataAsset* asset = Cast<USpineSkeletonDataAsset>(Obj);
 	
 	if (asset && ensure(NewReimportPaths.Num() == 1))
-		asset->SetSkeletonDataFileName(FName(*NewReimportPaths[0]));
+	{
+		asset->AssetImportData->UpdateFilenameOnly(NewReimportPaths[0]);
+	}
 }
 
-EReimportResult::Type USpineSkeletonAssetFactory::Reimport (UObject* Obj) {
+EReimportResult::Type USpineSkeletonAssetFactory::Reimport(UObject* Obj)
+{
 	USpineSkeletonDataAsset* asset = Cast<USpineSkeletonDataAsset>(Obj);
 	TArray<uint8> rawData;
-	if (!FFileHelper::LoadFileToArray(rawData, *asset->GetSkeletonDataFileName().ToString(), 0)) return EReimportResult::Failed;
+	if (!FFileHelper::LoadFileToArray(rawData, *asset->AssetImportData->GetFirstFilename(), 0))
+	{
+		return EReimportResult::Failed;
+	}
 	asset->SetRawData(rawData);
-	
+
 	const FString longPackagePath = FPackageName::GetLongPackagePath(asset->GetOutermost()->GetPathName());
-	LoadAtlas(*asset->GetSkeletonDataFileName().ToString(), longPackagePath);
-	
-	if (Obj->GetOuter()) Obj->GetOuter()->MarkPackageDirty();
-	else Obj->MarkPackageDirty();
-	
+
+	if (bIgnoreLoadOtherAsset == false)
+	{
+		USpineAtlasAsset* LoadedAtlasAsset = nullptr;
+
+		if (LoadAtlas(*asset->AssetImportData->GetFirstFilename(), longPackagePath, LoadedAtlasAsset))
+		{
+			asset->RelatedAtlasAsset = LoadedAtlasAsset;
+		}
+	}
+
+	if (Obj->GetOuter())
+	{
+		Obj->GetOuter()->MarkPackageDirty();
+	}
+	else
+	{
+		Obj->MarkPackageDirty();
+	}
+
 	return EReimportResult::Succeeded;
 }
 

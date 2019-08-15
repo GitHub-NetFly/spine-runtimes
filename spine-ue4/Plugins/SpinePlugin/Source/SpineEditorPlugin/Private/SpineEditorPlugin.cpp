@@ -1,45 +1,78 @@
-/******************************************************************************
- * Spine Runtimes License Agreement
- * Last updated May 1, 2019. Replaces all prior versions.
- *
- * Copyright (c) 2013-2019, Esoteric Software LLC
- *
- * Integration of the Spine Runtimes into software or otherwise creating
- * derivative works of the Spine Runtimes is permitted under the terms and
- * conditions of Section 2 of the Spine Editor License Agreement:
- * http://esotericsoftware.com/spine-editor-license
- *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
- * "Products"), provided that each user of the Products must obtain their own
- * Spine Editor license and redistribution of the Products in any form must
- * include this license and copyright notice.
- *
- * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE LLC "AS IS" AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
- * NO EVENT SHALL ESOTERIC SOFTWARE LLC BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS
- * INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *****************************************************************************/
+﻿
 
-#include "SpineEditorPluginPrivatePCH.h"
+#include "SpineEditorPlugin.h"
 #include "spine/spine.h"
 
+#include "PropertyEditorModule.h"
 
-class FSpineEditorPlugin: public ISpineEditorPlugin {
-	virtual void StartupModule() override;
-	virtual void ShutdownModule() override;
-};
+#include "SpineAnimationSpecLayout.h"
+
+
+
 
 IMPLEMENT_MODULE(FSpineEditorPlugin, SpineEditorPlugin)
 
-void FSpineEditorPlugin::StartupModule () {
+
+
+void FSpineEditorPlugin::StartupModule()
+{
+	FPropertyEditorModule& PropertyModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
+
+	RegisterCustomPropertyTypeLayout("SpineAnimationSpec", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FSpineAnimSpecLayout::MakeInstance));
+
+	PropertyModule.NotifyCustomizationModuleChanged();
 }
 
-void FSpineEditorPlugin::ShutdownModule () {
+void FSpineEditorPlugin::ShutdownModule()
+{
+	if (FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
+	{
+		FPropertyEditorModule& PropertyModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
+
+		// Unregister all classes customized by name
+		for (auto It = RegisteredClassNames.CreateConstIterator(); It; ++It)
+		{
+			if (It->IsValid())
+			{
+				PropertyModule.UnregisterCustomClassLayout(*It);
+			}
+		}
+
+		RegisteredClassNames.Empty();
+
+		// Unregister all structures
+		for (auto It = RegisteredPropertyTypes.CreateConstIterator(); It; ++It)
+		{
+			if (It->IsValid())
+			{
+				PropertyModule.UnregisterCustomPropertyTypeLayout(*It);
+			}
+		}
+
+		RegisteredPropertyTypes.Empty();
+
+		PropertyModule.NotifyCustomizationModuleChanged();
+	}
+}
+
+void FSpineEditorPlugin::RegisterCustomClassLayout(FName ClassName, FOnGetDetailCustomizationInstance DetailLayoutDelegate)
+{
+	check(ClassName != NAME_None);
+
+	RegisteredClassNames.Add(ClassName);
+
+	static FName PropertyEditor("PropertyEditor");
+	FPropertyEditorModule& PropertyModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>(PropertyEditor);
+	PropertyModule.RegisterCustomClassLayout(ClassName, DetailLayoutDelegate);
+}
+
+void FSpineEditorPlugin::RegisterCustomPropertyTypeLayout(FName PropertyTypeName, FOnGetPropertyTypeCustomizationInstance PropertyTypeLayoutDelegate)
+{
+	check(PropertyTypeName != NAME_None);
+
+	RegisteredPropertyTypes.Add(PropertyTypeName);
+
+	static FName PropertyEditor("PropertyEditor");
+	FPropertyEditorModule& PropertyModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>(PropertyEditor);
+	PropertyModule.RegisterCustomPropertyTypeLayout(PropertyTypeName, PropertyTypeLayoutDelegate);
 }

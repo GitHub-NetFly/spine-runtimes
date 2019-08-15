@@ -1,35 +1,34 @@
-/******************************************************************************
- * Spine Runtimes License Agreement
- * Last updated May 1, 2019. Replaces all prior versions.
- *
- * Copyright (c) 2013-2019, Esoteric Software LLC
- *
- * Integration of the Spine Runtimes into software or otherwise creating
- * derivative works of the Spine Runtimes is permitted under the terms and
- * conditions of Section 2 of the Spine Editor License Agreement:
- * http://esotericsoftware.com/spine-editor-license
- *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
- * "Products"), provided that each user of the Products must obtain their own
- * Spine Editor license and redistribution of the Products in any form must
- * include this license and copyright notice.
- *
- * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE LLC "AS IS" AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
- * NO EVENT SHALL ESOTERIC SOFTWARE LLC BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS
- * INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *****************************************************************************/
+﻿/******************************************************************************
+* Spine Runtimes Software License v2.5
+*
+* Copyright (c) 2013-2016, Esoteric Software
+* All rights reserved.
+*
+* You are granted a perpetual, non-exclusive, non-sublicensable, and
+* non-transferable license to use, install, execute, and perform the Spine
+* Runtimes software and derivative works solely for personal or internal
+* use. Without the written permission of Esoteric Software (see Section 2 of
+* the Spine Software License Agreement), you may not (a) modify, translate,
+* adapt, or develop new applications using the Spine Runtimes or otherwise
+* create derivative works or improvements of the Spine Runtimes or (b) remove,
+* delete, alter, or obscure any trademarks or any copyright, trademark, patent,
+* or other intellectual property or proprietary rights notices on or in the
+* Software, including any copy thereof. Redistributions in binary or source
+* form must include this license and terms.
+*
+* THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE "AS IS" AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL ESOTERIC SOFTWARE BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS INTERRUPTION, OR LOSS OF
+* USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+* IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+* POSSIBILITY OF SUCH DAMAGE.
+*****************************************************************************/
 
-#ifdef SPINE_UE4
-#include "SpinePluginPrivatePCH.h"
-#endif
+
 
 #include <spine/SkeletonBounds.h>
 
@@ -44,19 +43,21 @@ using namespace spine;
 SkeletonBounds::SkeletonBounds() : _minX(0), _minY(0), _maxX(0), _maxY(0) {
 }
 
-void SkeletonBounds::update(Skeleton &skeleton, bool updateAabb) {
-	Vector<Slot *> &slots = skeleton._slots;
-	size_t slotCount = slots.size();
+void SkeletonBounds::update(Skeleton &skeleton, bool updateAabb)
+{
+
+	TArray<TSharedPtr<Slot>> &slots = skeleton._slots;
+	int32 slotCount = slots.Num();
 
 	_boundingBoxes.clear();
-	for (size_t i = 0, n = _polygons.size(); i < n; ++i) {
+	for (int32 i = 0, n = _polygons.size(); i < n; ++i) {
 		_polygonPool.add(_polygons[i]);
 	}
 
 	_polygons.clear();
 
 	for (size_t i = 0; i < slotCount; i++) {
-		Slot *slot = slots[i];
+		TSharedPtr<Slot> slot = slots[i];
 		if (!slot->getBone().isActive()) continue;
 
 		Attachment *attachment = slot->getAttachment();
@@ -67,19 +68,19 @@ void SkeletonBounds::update(Skeleton &skeleton, bool updateAabb) {
 		_boundingBoxes.add(boundingBox);
 
 		Polygon *polygonP = NULL;
-		size_t poolCount = _polygonPool.size();
+		int32 poolCount = _polygonPool.size();
 		if (poolCount > 0) {
 			polygonP = _polygonPool[poolCount - 1];
 			_polygonPool.removeAt(poolCount - 1);
 		} else {
-			polygonP = new(__FILE__, __LINE__) Polygon();
+			polygonP = new Polygon();
 		}
 
 		_polygons.add(polygonP);
 
 		Polygon &polygon = *polygonP;
 
-		size_t count = boundingBox->getWorldVerticesLength();
+		int32 count = boundingBox->getWorldVerticesLength();
 		polygon._count = count;
 		if (polygon._vertices.size() < count) {
 			polygon._vertices.setSize(count, 0);
@@ -157,7 +158,7 @@ bool SkeletonBounds::containsPoint(Polygon *polygon, float x, float y) {
 }
 
 BoundingBoxAttachment *SkeletonBounds::containsPoint(float x, float y) {
-	for (size_t i = 0, n = _polygons.size(); i < n; ++i) {
+	for (int32 i = 0, n = _polygons.size(); i < n; ++i) {
 		if (containsPoint(_polygons[i], x, y)) {
 			return _boundingBoxes[i];
 		}
@@ -167,7 +168,7 @@ BoundingBoxAttachment *SkeletonBounds::containsPoint(float x, float y) {
 }
 
 BoundingBoxAttachment *SkeletonBounds::intersectsSegment(float x1, float y1, float x2, float y2) {
-	for (size_t i = 0, n = _polygons.size(); i < n; ++i) {
+	for (int32 i = 0, n = _polygons.size(); i < n; ++i) {
 		if (intersectsSegment(_polygons[i], x1, y1, x2, y2)) {
 			return _boundingBoxes[i];
 		}
@@ -177,12 +178,12 @@ BoundingBoxAttachment *SkeletonBounds::intersectsSegment(float x1, float y1, flo
 
 bool SkeletonBounds::intersectsSegment(Polygon *polygon, float x1, float y1, float x2, float y2) {
 	Vector<float> &vertices = polygon->_vertices;
-	size_t nn = polygon->_count;
+	int32 nn = polygon->_count;
 
 	float width12 = x1 - x2, height12 = y1 - y2;
 	float det1 = x1 * y2 - y1 * x2;
 	float x3 = vertices[nn - 2], y3 = vertices[nn - 1];
-	for (size_t ii = 0; ii < nn; ii += 2) {
+	for (int32 ii = 0; ii < nn; ii += 2) {
 		float x4 = vertices[ii], y4 = vertices[ii + 1];
 		float det2 = x3 * y4 - y3 * x4;
 		float width34 = x3 - x4, height34 = y3 - y4;
@@ -221,7 +222,7 @@ void SkeletonBounds::aabbCompute() {
 	float maxX = std::numeric_limits<float>::max();
 	float maxY = std::numeric_limits<float>::max();
 
-	for (size_t i = 0, n = _polygons.size(); i < n; ++i) {
+	for (int32 i = 0, n = _polygons.size(); i < n; ++i) {
 		Polygon *polygon = _polygons[i];
 		Vector<float> &vertices = polygon->_vertices;
 		for (int ii = 0, nn = polygon->_count; ii < nn; ii += 2) {

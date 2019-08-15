@@ -1,35 +1,37 @@
-/******************************************************************************
- * Spine Runtimes License Agreement
- * Last updated May 1, 2019. Replaces all prior versions.
+﻿/******************************************************************************
+ * Spine Runtimes Software License v2.5
  *
- * Copyright (c) 2013-2019, Esoteric Software LLC
+ * Copyright (c) 2013-2016, Esoteric Software
+ * All rights reserved.
  *
- * Integration of the Spine Runtimes into software or otherwise creating
- * derivative works of the Spine Runtimes is permitted under the terms and
- * conditions of Section 2 of the Spine Editor License Agreement:
- * http://esotericsoftware.com/spine-editor-license
+ * You are granted a perpetual, non-exclusive, non-sublicensable, and
+ * non-transferable license to use, install, execute, and perform the Spine
+ * Runtimes software and derivative works solely for personal or internal
+ * use. Without the written permission of Esoteric Software (see Section 2 of
+ * the Spine Software License Agreement), you may not (a) modify, translate,
+ * adapt, or develop new applications using the Spine Runtimes or otherwise
+ * create derivative works or improvements of the Spine Runtimes or (b) remove,
+ * delete, alter, or obscure any trademarks or any copyright, trademark, patent,
+ * or other intellectual property or proprietary rights notices on or in the
+ * Software, including any copy thereof. Redistributions in binary or source
+ * form must include this license and terms.
  *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
- * "Products"), provided that each user of the Products must obtain their own
- * Spine Editor license and redistribution of the Products in any form must
- * include this license and copyright notice.
- *
- * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE LLC "AS IS" AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
- * NO EVENT SHALL ESOTERIC SOFTWARE LLC BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS
- * INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ESOTERIC SOFTWARE BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS INTERRUPTION, OR LOSS OF
+ * USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+ * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 
 #ifndef Spine_Atlas_h
 #define Spine_Atlas_h
 
+#include "CoreMinimal.h"
 #include <spine/Vector.h>
 #include <spine/Extension.h>
 #include <spine/SpineObject.h>
@@ -37,7 +39,7 @@
 #include <spine/HasRendererObject.h>
 
 namespace spine {
-enum Format {
+enum SpineFormat {
 	Format_Alpha,
 	Format_Intensity,
 	Format_LuminanceAlpha,
@@ -47,7 +49,7 @@ enum Format {
 	Format_RGBA8888
 };
 
-enum TextureFilter {
+enum SpineTextureFilter {
 	TextureFilter_Unknown,
 	TextureFilter_Nearest,
 	TextureFilter_Linear,
@@ -58,33 +60,62 @@ enum TextureFilter {
 	TextureFilter_MipMapLinearLinear
 };
 
-enum TextureWrap {
+enum SpineTextureWrap {
 	TextureWrap_MirroredRepeat,
 	TextureWrap_ClampToEdge,
 	TextureWrap_Repeat
 };
 
-class SP_API AtlasPage : public SpineObject, public HasRendererObject {
+class SP_API AtlasPage :public TSharedFromThis<AtlasPage>, public THasWeakRendererObject<UTexture2D>
+{
 public:
-	String name;
-	String texturePath;
-	Format format;
-	TextureFilter minFilter;
-	TextureFilter magFilter;
-	TextureWrap uWrap;
-	TextureWrap vWrap;
+	FString name;
+	SpineFormat format;
+	SpineTextureFilter minFilter;
+	SpineTextureFilter magFilter;
+	SpineTextureWrap uWrap;
+	SpineTextureWrap vWrap;
 	int width, height;
 
-	explicit AtlasPage(const String &inName) : name(inName), format(Format_RGBA8888), minFilter(TextureFilter_Nearest),
-											   magFilter(TextureFilter_Nearest), uWrap(TextureWrap_ClampToEdge),
-											   vWrap(TextureWrap_ClampToEdge), width(0), height(0) {
+	AtlasPage() :format(Format_RGBA8888), minFilter(TextureFilter_Nearest),
+		magFilter(TextureFilter_Nearest), uWrap(TextureWrap_ClampToEdge),
+		vWrap(TextureWrap_ClampToEdge), width(0), height(0)
+	{}
+
+	explicit AtlasPage(const FString &inName) : name(inName), format(Format_RGBA8888), minFilter(TextureFilter_Nearest),
+		magFilter(TextureFilter_Nearest), uWrap(TextureWrap_ClampToEdge),
+		vWrap(TextureWrap_ClampToEdge), width(0), height(0)
+	{
 	}
+
+	friend bool operator==(const AtlasPage& lhs, const AtlasPage& rhs);
+	
+
+	friend bool operator!=(const AtlasPage& lhs, const AtlasPage& rhs)
+	{
+		return !(lhs == rhs);
+	}
+	
 };
 
-class SP_API AtlasRegion : public SpineObject {
+inline uint32 GetTypeHash(const AtlasPage& InPage)
+{
+	auto hash1 = ::GetTypeHash(InPage.name);
+	auto hash2 = ::GetTypeHash(InPage.width);
+	auto hash3 = ::GetTypeHash(InPage.height);
+	return HashCombine(HashCombine(hash1, hash2), hash3);
+}
+
+class SP_API AtlasRegion :public TSharedFromThis<AtlasRegion>
+{
 public:
-	AtlasPage *page;
-	String name;
+	AtlasRegion() :Page(TEXT("Dummy"))
+	{
+
+	}
+
+	AtlasPage Page;
+	FString RegionName;
 	int x, y, width, height;
 	float u, v, u2, v2;
 	float offsetX, offsetY;
@@ -92,13 +123,14 @@ public:
 	int index;
 	bool rotate;
 	int degrees;
-	Vector<int> splits;
-	Vector<int> pads;
+	TArray<int32> splits;
+	TArray<int32> pads;
 };
 
 class TextureLoader;
 
-class SP_API Atlas : public SpineObject {
+class SP_API Atlas : public TSharedFromThis<Atlas> 
+{
 public:
 	Atlas(const String &path, TextureLoader *textureLoader, bool createTexture = true);
 
@@ -111,14 +143,20 @@ public:
 	/// Returns the first region found with the specified name. This method uses String comparison to find the region, so the result
 	/// should be cached rather than calling this method multiple times.
 	/// @return The region, or NULL.
-	AtlasRegion *findRegion(const String &name);
+	TSharedPtr<AtlasRegion> findRegion(const FString &RegionName);
 
-	Vector<AtlasPage*> &getPages();
+	TSharedPtr<AtlasRegion> findRegionInSpecificPage(const FString &RegionName, const FString & PageName);
+
+	//Vector<AtlasPage*> &getPages();
+	TArray<AtlasPage> & getPages(){ return _pages; }
 
 private:
-	Vector<AtlasPage *> _pages;
-	Vector<AtlasRegion *> _regions;
-	TextureLoader *_textureLoader;
+
+
+	TArray<AtlasPage> _pages;
+	TArray<TSharedPtr<AtlasRegion>> _regions;
+	
+	TSharedPtr<spine::TextureLoader> _textureLoader;
 
 	void load(const char *begin, int length, const char *dir, bool createTexture);
 
@@ -155,3 +193,4 @@ private:
 }
 
 #endif /* Spine_Atlas_h */
+

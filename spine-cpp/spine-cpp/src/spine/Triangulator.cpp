@@ -1,34 +1,33 @@
-/******************************************************************************
- * Spine Runtimes License Agreement
- * Last updated May 1, 2019. Replaces all prior versions.
- *
- * Copyright (c) 2013-2019, Esoteric Software LLC
- *
- * Integration of the Spine Runtimes into software or otherwise creating
- * derivative works of the Spine Runtimes is permitted under the terms and
- * conditions of Section 2 of the Spine Editor License Agreement:
- * http://esotericsoftware.com/spine-editor-license
- *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
- * "Products"), provided that each user of the Products must obtain their own
- * Spine Editor license and redistribution of the Products in any form must
- * include this license and copyright notice.
- *
- * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE LLC "AS IS" AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
- * NO EVENT SHALL ESOTERIC SOFTWARE LLC BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS
- * INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *****************************************************************************/
-#ifdef SPINE_UE4
-#include "SpinePluginPrivatePCH.h"
-#endif
+﻿/******************************************************************************
+* Spine Runtimes Software License v2.5
+*
+* Copyright (c) 2013-2016, Esoteric Software
+* All rights reserved.
+*
+* You are granted a perpetual, non-exclusive, non-sublicensable, and
+* non-transferable license to use, install, execute, and perform the Spine
+* Runtimes software and derivative works solely for personal or internal
+* use. Without the written permission of Esoteric Software (see Section 2 of
+* the Spine Software License Agreement), you may not (a) modify, translate,
+* adapt, or develop new applications using the Spine Runtimes or otherwise
+* create derivative works or improvements of the Spine Runtimes or (b) remove,
+* delete, alter, or obscure any trademarks or any copyright, trademark, patent,
+* or other intellectual property or proprietary rights notices on or in the
+* Software, including any copy thereof. Redistributions in binary or source
+* form must include this license and terms.
+*
+* THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE "AS IS" AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL ESOTERIC SOFTWARE BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS INTERRUPTION, OR LOSS OF
+* USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+* IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+* POSSIBILITY OF SUCH DAMAGE.
+*****************************************************************************/
+
 
 #include <spine/Triangulator.h>
 
@@ -42,20 +41,20 @@ Triangulator::~Triangulator() {
 }
 
 Vector<int> &Triangulator::triangulate(Vector<float> &vertices) {
-	size_t vertexCount = vertices.size() >> 1;
+	int32 vertexCount = vertices.size() >> 1;
 
 	Vector<int> &indices = _indices;
 	indices.clear();
 	indices.ensureCapacity(vertexCount);
 	indices.setSize(vertexCount, 0);
-	for (size_t i = 0; i < vertexCount; ++i) {
+	for (int32 i = 0; i < vertexCount; ++i) {
 		indices[i] = i;
 	}
 
 	Vector<bool> &isConcaveArray = _isConcaveArray;
 	isConcaveArray.ensureCapacity(vertexCount);
 	isConcaveArray.setSize(vertexCount, 0);
-	for (size_t i = 0, n = vertexCount; i < n; ++i) {
+	for (int32 i = 0, n = vertexCount; i < n; ++i) {
 		isConcaveArray[i] = isConcave(i, vertexCount, vertices, indices);
 	}
 
@@ -65,7 +64,7 @@ Vector<int> &Triangulator::triangulate(Vector<float> &vertices) {
 
 	while (vertexCount > 3) {
 		// Find ear tip.
-		size_t previous = vertexCount - 1, i = 0, next = 1;
+		int32 previous = vertexCount - 1, i = 0, next = 1;
 
 		// outer:
 		while (true) {
@@ -74,7 +73,7 @@ Vector<int> &Triangulator::triangulate(Vector<float> &vertices) {
 				float p1x = vertices[p1], p1y = vertices[p1 + 1];
 				float p2x = vertices[p2], p2y = vertices[p2 + 1];
 				float p3x = vertices[p3], p3y = vertices[p3 + 1];
-				for (size_t ii = (next + 1) % vertexCount; ii != previous; ii = (ii + 1) % vertexCount) {
+				for (int32 ii = (next + 1) % vertexCount; ii != previous; ii = (ii + 1) % vertexCount) {
 					if (!isConcaveArray[ii]) {
 						continue;
 					}
@@ -133,13 +132,13 @@ Vector<int> &Triangulator::triangulate(Vector<float> &vertices) {
 
 Vector<Vector<float> *> &Triangulator::decompose(Vector<float> &vertices, Vector<int> &triangles) {
 	Vector<Vector<float> *> &convexPolygons = _convexPolygons;
-	for (size_t i = 0, n = convexPolygons.size(); i < n; ++i) {
+	for (int32 i = 0, n = convexPolygons.size(); i < n; ++i) {
 		_polygonPool.free(convexPolygons[i]);
 	}
 	convexPolygons.clear();
 
 	Vector<Vector<int> *> &convexPolygonsIndices = _convexPolygonsIndices;
-	for (size_t i = 0, n = convexPolygonsIndices.size(); i < n; ++i) {
+	for (int32 i = 0, n = convexPolygonsIndices.size(); i < n; ++i) {
 		_polygonIndicesPool.free(convexPolygonsIndices[i]);
 	}
 	convexPolygonsIndices.clear();
@@ -152,7 +151,7 @@ Vector<Vector<float> *> &Triangulator::decompose(Vector<float> &vertices, Vector
 
 	// Merge subsequent triangles if they form a triangle fan.
 	int fanBaseIndex = -1, lastwinding = 0;
-	for (size_t i = 0, n = triangles.size(); i < n; i += 3) {
+	for (int32 i = 0, n = triangles.size(); i < n; i += 3) {
 		int t1 = triangles[i] << 1, t2 = triangles[i + 1] << 1, t3 = triangles[i + 2] << 1;
 		float x1 = vertices[t1], y1 = vertices[t1 + 1];
 		float x2 = vertices[t2], y2 = vertices[t2 + 1];
@@ -161,7 +160,7 @@ Vector<Vector<float> *> &Triangulator::decompose(Vector<float> &vertices, Vector
 		// If the base of the last triangle is the same as this triangle, check if they form a convex polygon (triangle fan).
 		bool merged = false;
 		if (fanBaseIndex == t1) {
-			size_t o = polygon->size() - 4;
+			int32 o = polygon->size() - 4;
 			Vector<float> &p = *polygon;
 			int winding1 = winding(p[o], p[o + 1], p[o + 2], p[o + 3], x3, y3);
 			int winding2 = winding(x3, y3, p[0], p[1], p[2], p[3]);
@@ -207,7 +206,7 @@ Vector<Vector<float> *> &Triangulator::decompose(Vector<float> &vertices, Vector
 	}
 
 	// Go through the list of polygons and try to merge the remaining triangles with the found triangle fans.
-	for (size_t i = 0, n = convexPolygons.size(); i < n; ++i) {
+	for (int32 i = 0, n = convexPolygons.size(); i < n; ++i) {
 		polygonIndices = convexPolygonsIndices[i];
 
 		if (polygonIndices->size() == 0) continue;
@@ -215,7 +214,7 @@ Vector<Vector<float> *> &Triangulator::decompose(Vector<float> &vertices, Vector
 		int lastIndex = (*polygonIndices)[polygonIndices->size() - 1];
 
 		polygon = convexPolygons[i];
-		size_t o = polygon->size() - 4;
+		int32 o = polygon->size() - 4;
 		Vector<float> &p = *polygon;
 		float prevPrevX = p[o], prevPrevY = p[o + 1];
 		float prevX = p[o + 2], prevY = p[o + 3];
@@ -223,7 +222,7 @@ Vector<Vector<float> *> &Triangulator::decompose(Vector<float> &vertices, Vector
 		float secondX = p[2], secondY = p[3];
 		int winding0 = winding(prevPrevX, prevPrevY, prevX, prevY, firstX, firstY);
 
-		for (size_t ii = 0; ii < n; ++ii) {
+		for (int32 ii = 0; ii < n; ++ii) {
 			if (ii == i) {
 				continue;
 			}

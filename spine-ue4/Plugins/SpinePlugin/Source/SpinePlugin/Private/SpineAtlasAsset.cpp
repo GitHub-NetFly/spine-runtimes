@@ -1,116 +1,126 @@
-/******************************************************************************
- * Spine Runtimes License Agreement
- * Last updated May 1, 2019. Replaces all prior versions.
- *
- * Copyright (c) 2013-2019, Esoteric Software LLC
- *
- * Integration of the Spine Runtimes into software or otherwise creating
- * derivative works of the Spine Runtimes is permitted under the terms and
- * conditions of Section 2 of the Spine Editor License Agreement:
- * http://esotericsoftware.com/spine-editor-license
- *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
- * "Products"), provided that each user of the Products must obtain their own
- * Spine Editor license and redistribution of the Products in any form must
- * include this license and copyright notice.
- *
- * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE LLC "AS IS" AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
- * NO EVENT SHALL ESOTERIC SOFTWARE LLC BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS
- * INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *****************************************************************************/
+﻿
 
-#include "SpinePluginPrivatePCH.h"
+#include"SpineAtlasAsset.h"
 #include "spine/spine.h"
-#include <string.h>
-#include <string>
-#include <stdlib.h>
+
+#include "Misc/CString.h"
+#include "EditorFramework/AssetImportData.h"
+#include "Engine/Texture2D.h"
 
 #define LOCTEXT_NAMESPACE "Spine"
 
 using namespace spine;
 
+void USpineAtlasAsset::PostInitProperties() 
+{
 #if WITH_EDITORONLY_DATA
-
-void USpineAtlasAsset::SetAtlasFileName (const FName &AtlasFileName) {
-	importData->UpdateFilenameOnly(AtlasFileName.ToString());
-	TArray<FString> files;
-	importData->ExtractFilenames(files);
-	if (files.Num() > 0) atlasFileName = FName(*files[0]);
-}
-
-void USpineAtlasAsset::PostInitProperties () {
-	if (!HasAnyFlags(RF_ClassDefaultObject)) importData = NewObject<UAssetImportData>(this, TEXT("AssetImportData"));
+	if (!HasAnyFlags(RF_ClassDefaultObject))
+	{
+		AssetImportData = NewObject<UAssetImportData>(this, TEXT("AssetImportData"));
+	}
+#endif //WITH_EDITORONLY_DATA
 	Super::PostInitProperties();
 }
 
-void USpineAtlasAsset::GetAssetRegistryTags (TArray<FAssetRegistryTag>& OutTags) const {
-	if (importData) {
-		OutTags.Add(FAssetRegistryTag(SourceFileTagName(), importData->GetSourceData().ToJson(), FAssetRegistryTag::TT_Hidden) );
+void USpineAtlasAsset::GetAssetRegistryTags(TArray<FAssetRegistryTag>& OutTags) const
+{
+
+#if WITH_EDITORONLY_DATA
+	if (AssetImportData)
+	{
+		OutTags.Add(FAssetRegistryTag(SourceFileTagName(), AssetImportData->GetSourceData().ToJson(), FAssetRegistryTag::TT_Hidden));
 	}
-	
+#endif //WITH_EDITORONLY_DATA
+
 	Super::GetAssetRegistryTags(OutTags);
 }
 
-void USpineAtlasAsset::Serialize (FArchive& Ar) {
-	Super::Serialize(Ar);
-	if (Ar.IsLoading() && Ar.UE4Ver() < VER_UE4_ASSET_IMPORT_DATA_AS_JSON && !importData)
-		importData = NewObject<UAssetImportData>(this, TEXT("AssetImportData"));
+
+TSharedPtr<spine::Atlas> USpineAtlasAsset::BuildAtlas()
+{
+	auto AnsiChars = StringCast<ANSICHAR>(*rawData);
+
+	TSharedRef<spine::Atlas> SpineAtlas = MakeShared<spine::Atlas>(AnsiChars.Get(), AnsiChars.Length(), "", nullptr);
+
+	TArray<AtlasPage>& SpineAtlasPagesRef = SpineAtlas->getPages();
+
+	TMap<FString, UTexture2D*> BeforeMap = MoveTemp(AtlasTexturePageMap);
+
+	for (int32 i = 0, num = SpineAtlasPagesRef.Num(); i < num; i++)
+	{
+		AtlasPage& page = SpineAtlasPagesRef[i];
+
+		if (auto FoundValue = BeforeMap.Find(page.name))
+		{
+			AtlasTexturePageMap.Add(page.name) = *FoundValue;
+			page.SetRendererObject(*FoundValue);
+		}
+		else
+		{
+			AtlasTexturePageMap.Add(page.name) = nullptr;
+		}
+	}
+	return SpineAtlas;
 }
 
-#endif
-
-FName USpineAtlasAsset::GetAtlasFileName() const {
-#if WITH_EDITORONLY_DATA
-	TArray<FString> files;
-	if (importData) importData->ExtractFilenames(files);
-	if (files.Num() > 0) return FName(*files[0]);
-	else return atlasFileName;
-#else
-	return atlasFileName;
-#endif
-}
-
-void USpineAtlasAsset::SetRawData(const FString &RawData) {
+void USpineAtlasAsset::SetRawData(const FString &RawData)
+{
 	this->rawData = RawData;
-	if (atlas) {
-		delete atlas;
-		atlas = nullptr;
-	}
+
+	MyAtlas = BuildAtlas();
 }
 
-void USpineAtlasAsset::BeginDestroy () {
-	if (atlas) {
-		delete atlas;
-		atlas = nullptr;
+
+#if WITH_EDITOR
+void USpineAtlasAsset::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	if (PropertyChangedEvent.Property&&PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(USpineAtlasAsset, AtlasTexturePageMap))
+	{
+		TArray<AtlasPage>& SpineAtlasPagesRef = MyAtlas->getPages();
+
+		for (int32 i = 0, num = SpineAtlasPagesRef.Num(); i < num; i++)
+		{
+			AtlasPage& page = SpineAtlasPagesRef[i];
+
+			UTexture2D** TexturePtr = AtlasTexturePageMap.Find(page.name);
+			if (ensureMsgf(TexturePtr,TEXT(" AtlasTexturePageMap shouldn't change key value.")))
+			{
+				page.SetRendererObject(*TexturePtr);
+			}
+			
+		}
 	}
-	Super::BeginDestroy();
 }
+#endif
 
-Atlas* USpineAtlasAsset::GetAtlas () {
-	if (!atlas) {
-		if (atlas) {
-			delete atlas;
-			atlas = nullptr;
-		}
-		std::string t = TCHAR_TO_UTF8(*rawData);
+void USpineAtlasAsset::PostLoad()
+{
+	Super::PostLoad();
 
-		atlas = new (__FILE__, __LINE__) Atlas(t.c_str(), strlen(t.c_str()), "", nullptr);
-		Vector<AtlasPage*> &pages = atlas->getPages();
-		for (size_t i = 0, n = pages.size(), j = 0; i < n; i++) {
-			AtlasPage* page = pages[i];
-			if (atlasPages.Num() > 0 && atlasPages.Num() > (int32)i)
-				page->setRendererObject(atlasPages[j++]);
+	MyAtlas = BuildAtlas();
+
+	if (atlasTexturePages_DEPRECATED.Num() > 0) //do upgrade
+	{
+		TArray<AtlasPage>& SpineAtlasPagesRef = MyAtlas->getPages();
+
+		for (int32 i = 0, num = SpineAtlasPagesRef.Num(); i < num; i++)
+		{
+			AtlasPage& page = SpineAtlasPagesRef[i];
+
+			if (atlasTexturePages_DEPRECATED.IsValidIndex(i))
+			{
+				AtlasTexturePageMap.Add(page.name) = atlasTexturePages_DEPRECATED[i];
+
+				page.SetRendererObject(atlasTexturePages_DEPRECATED[i]);
+			}
 		}
+		atlasTexturePages_DEPRECATED.Empty();
+		
 	}
-	return this->atlas;
+
 }
 
 #undef LOCTEXT_NAMESPACE
+

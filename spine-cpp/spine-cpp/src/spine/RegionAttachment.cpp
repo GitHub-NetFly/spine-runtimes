@@ -1,35 +1,34 @@
-/******************************************************************************
- * Spine Runtimes License Agreement
- * Last updated May 1, 2019. Replaces all prior versions.
- *
- * Copyright (c) 2013-2019, Esoteric Software LLC
- *
- * Integration of the Spine Runtimes into software or otherwise creating
- * derivative works of the Spine Runtimes is permitted under the terms and
- * conditions of Section 2 of the Spine Editor License Agreement:
- * http://esotericsoftware.com/spine-editor-license
- *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
- * "Products"), provided that each user of the Products must obtain their own
- * Spine Editor license and redistribution of the Products in any form must
- * include this license and copyright notice.
- *
- * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE LLC "AS IS" AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
- * NO EVENT SHALL ESOTERIC SOFTWARE LLC BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS
- * INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *****************************************************************************/
+﻿/******************************************************************************
+* Spine Runtimes Software License v2.5
+*
+* Copyright (c) 2013-2016, Esoteric Software
+* All rights reserved.
+*
+* You are granted a perpetual, non-exclusive, non-sublicensable, and
+* non-transferable license to use, install, execute, and perform the Spine
+* Runtimes software and derivative works solely for personal or internal
+* use. Without the written permission of Esoteric Software (see Section 2 of
+* the Spine Software License Agreement), you may not (a) modify, translate,
+* adapt, or develop new applications using the Spine Runtimes or otherwise
+* create derivative works or improvements of the Spine Runtimes or (b) remove,
+* delete, alter, or obscure any trademarks or any copyright, trademark, patent,
+* or other intellectual property or proprietary rights notices on or in the
+* Software, including any copy thereof. Redistributions in binary or source
+* form must include this license and terms.
+*
+* THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE "AS IS" AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL ESOTERIC SOFTWARE BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS INTERRUPTION, OR LOSS OF
+* USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+* IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+* POSSIBILITY OF SUCH DAMAGE.
+*****************************************************************************/
 
-#ifdef SPINE_UE4
-#include "SpinePluginPrivatePCH.h"
-#endif
+
 
 #include <spine/RegionAttachment.h>
 
@@ -50,7 +49,7 @@ const int RegionAttachment::URY = 5;
 const int RegionAttachment::BRX = 6;
 const int RegionAttachment::BRY = 7;
 
-RegionAttachment::RegionAttachment(const String &name) : Attachment(name), HasRendererObject(),
+RegionAttachment::RegionAttachment(const FString &name) : Attachment(name),
 														 _x(0),
 														 _y(0),
 														 _rotation(0),
@@ -68,10 +67,11 @@ RegionAttachment::RegionAttachment(const String &name) : Attachment(name), HasRe
 														 _regionU(0),
 														 _regionV(0),
 														 _regionU2(0),
-														 _regionV2(0),
-														 _color(1, 1, 1, 1) {
-	_vertexOffset.setSize(NUM_UVS, 0);
-	_uvs.setSize(NUM_UVS, 0);
+													 _regionV2(0),
+														 _color(1, 1, 1, 1) 
+{
+	_vertexOffset.SetNumZeroed(NUM_UVS);
+	_uvs.SetNumZeroed(NUM_UVS);
 }
 
 void RegionAttachment::updateOffset() {
@@ -124,12 +124,12 @@ void RegionAttachment::setUVs(float u, float v, float u2, float v2, bool rotate)
 	}
 }
 
-void RegionAttachment::computeWorldVertices(Bone &bone, Vector<float> &worldVertices, size_t offset, size_t stride) {
+void RegionAttachment::computeWorldVertices(Bone &bone, Vector<float> &worldVertices, int32 offset, int32 stride) {
 	assert(worldVertices.size() >= (offset + 8));
 	computeWorldVertices(bone, worldVertices.buffer(), offset, stride);
 }
 
-void RegionAttachment::computeWorldVertices(Bone &bone, float* worldVertices, size_t offset, size_t stride) {
+void RegionAttachment::computeWorldVertices(Bone &bone, float* worldVertices, int32 offset, int32 stride) {
 	float x = bone.getWorldX(), y = bone.getWorldY();
 	float a = bone.getA(), b = bone.getB(), c = bone.getC(), d = bone.getD();
 	float offsetX, offsetY;
@@ -214,11 +214,11 @@ void RegionAttachment::setHeight(float inValue) {
 	_height = inValue;
 }
 
-const String &RegionAttachment::getPath() {
+const FString &RegionAttachment::getPath() {
 	return _path;
 }
 
-void RegionAttachment::setPath(const String &inValue) {
+void RegionAttachment::setPath(const FString &inValue) {
 	_path = inValue;
 }
 
@@ -270,11 +270,11 @@ void RegionAttachment::setRegionOriginalHeight(float inValue) {
 	_regionOriginalHeight = inValue;
 }
 
-Vector<float> &RegionAttachment::getOffset() {
+TArray<float> &RegionAttachment::getOffset() {
 	return _vertexOffset;
 }
 
-Vector<float> &RegionAttachment::getUVs() {
+TArray<float>  &RegionAttachment::getUVs() {
 	return _uvs;
 }
 
@@ -282,15 +282,42 @@ spine::Color &RegionAttachment::getColor() {
 	return _color;
 }
 
-Attachment* RegionAttachment::copy() {
-	RegionAttachment* copy = new (__FILE__, __LINE__) RegionAttachment(getName());
+
+TSharedRef<spine::RegionAttachment> spine::RegionAttachment::GetCloneWithNewAtlasRegion(TSharedRef<AtlasRegion> NewRegion)
+{
+	TSharedRef<spine::RegionAttachment> Result = MakeShared<spine::RegionAttachment>(*this);
+	Result->SetAttachmentAtlasRegion(NewRegion);
+	updateOffset();
+	return Result;
+}
+
+void spine::RegionAttachment::SetAttachmentAtlasRegion(TSharedRef<AtlasRegion> InAtlasRegion)
+{
+	AttachmentAtlasRegion = InAtlasRegion;
+
+	this->setUVs(AttachmentAtlasRegion->u,
+		AttachmentAtlasRegion->v,
+		AttachmentAtlasRegion->u2,
+		AttachmentAtlasRegion->v2,
+		AttachmentAtlasRegion->rotate);
+	this->_regionOffsetX = AttachmentAtlasRegion->offsetX;
+	this->_regionOffsetY = AttachmentAtlasRegion->offsetY;
+	this->_regionWidth = (float)AttachmentAtlasRegion->width;
+	this->_regionHeight = (float)AttachmentAtlasRegion->height;
+	this->_regionOriginalWidth = (float)AttachmentAtlasRegion->originalWidth;
+	this->_regionOriginalHeight = (float)AttachmentAtlasRegion->originalHeight;
+}
+
+
+Attachment* spine::RegionAttachment::copy() {
+	RegionAttachment* copy = new RegionAttachment(getName());
 	copy->_regionWidth = _regionWidth;
 	copy->_regionHeight = _regionHeight;
 	copy->_regionOffsetX = _regionOffsetX;
 	copy->_regionOffsetY = _regionOffsetY;
 	copy->_regionOriginalWidth = _regionOriginalWidth;
 	copy->_regionOriginalHeight = _regionOriginalHeight;
-	copy->setRendererObject(getRendererObject());
+	//copy->setRendererObject(getRendererObject());
 	copy->_path = _path;
 	copy->_x = _x;
 	copy->_y = _y;
@@ -299,8 +326,8 @@ Attachment* RegionAttachment::copy() {
 	copy->_rotation = _rotation;
 	copy->_width = _width;
 	copy->_height = _height;
-	copy->_uvs.clearAndAddAll(_uvs);
-	copy->_vertexOffset.clearAndAddAll(_vertexOffset);
+	copy->_uvs = _uvs;
+	copy->_vertexOffset = _vertexOffset;
 	copy->_color.set(_color);
 	return copy;
 }

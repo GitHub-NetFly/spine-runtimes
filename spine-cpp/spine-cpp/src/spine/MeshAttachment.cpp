@@ -1,51 +1,51 @@
-/******************************************************************************
- * Spine Runtimes License Agreement
- * Last updated May 1, 2019. Replaces all prior versions.
- *
- * Copyright (c) 2013-2019, Esoteric Software LLC
- *
- * Integration of the Spine Runtimes into software or otherwise creating
- * derivative works of the Spine Runtimes is permitted under the terms and
- * conditions of Section 2 of the Spine Editor License Agreement:
- * http://esotericsoftware.com/spine-editor-license
- *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
- * "Products"), provided that each user of the Products must obtain their own
- * Spine Editor license and redistribution of the Products in any form must
- * include this license and copyright notice.
- *
- * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE LLC "AS IS" AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
- * NO EVENT SHALL ESOTERIC SOFTWARE LLC BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS
- * INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *****************************************************************************/
+﻿/******************************************************************************
+* Spine Runtimes Software License v2.5
+*
+* Copyright (c) 2013-2016, Esoteric Software
+* All rights reserved.
+*
+* You are granted a perpetual, non-exclusive, non-sublicensable, and
+* non-transferable license to use, install, execute, and perform the Spine
+* Runtimes software and derivative works solely for personal or internal
+* use. Without the written permission of Esoteric Software (see Section 2 of
+* the Spine Software License Agreement), you may not (a) modify, translate,
+* adapt, or develop new applications using the Spine Runtimes or otherwise
+* create derivative works or improvements of the Spine Runtimes or (b) remove,
+* delete, alter, or obscure any trademarks or any copyright, trademark, patent,
+* or other intellectual property or proprietary rights notices on or in the
+* Software, including any copy thereof. Redistributions in binary or source
+* form must include this license and terms.
+*
+* THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE "AS IS" AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL ESOTERIC SOFTWARE BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS INTERRUPTION, OR LOSS OF
+* USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+* IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+* POSSIBILITY OF SUCH DAMAGE.
+*****************************************************************************/
 
-#ifdef SPINE_UE4
-#include "SpinePluginPrivatePCH.h"
-#endif
+
 
 #include <spine/MeshAttachment.h>
 #include <spine/HasRendererObject.h>
+#include <spine/Skin.h>
 
 using namespace spine;
 
 RTTI_IMPL(MeshAttachment, VertexAttachment)
 
-MeshAttachment::MeshAttachment(const String &name) : VertexAttachment(name), HasRendererObject(),
+MeshAttachment::MeshAttachment(const FString &name) : VertexAttachment(name), 
 													 _regionOffsetX(0),
 													 _regionOffsetY(0),
 													 _regionWidth(0),
 													 _regionHeight(0),
 													 _regionOriginalWidth(0),
 													 _regionOriginalHeight(0),
-													 _parentMesh(NULL),
+                                                    _parentMesh(nullptr),
 													 _path(),
 													 _regionU(0),
 													 _regionV(0),
@@ -257,6 +257,7 @@ void MeshAttachment::setParentMesh(MeshAttachment *inValue) {
 		_edges.clearAndAddAll(inValue->_edges);
 		_width = inValue->_width;
 		_height = inValue->_height;
+
 	}
 }
 
@@ -284,11 +285,39 @@ spine::Color &MeshAttachment::getColor() {
 	return _color;
 }
 
+void MeshAttachment::SetAttachmentAtlasRegion(TSharedRef<AtlasRegion> InAtlasRegion)
+{
+	AttachmentAtlasRegion = InAtlasRegion;
+
+	this->_regionU = AttachmentAtlasRegion->u;
+	this->_regionV = AttachmentAtlasRegion->v;
+	this->_regionU2 = AttachmentAtlasRegion->u2;
+	this->_regionV2 = AttachmentAtlasRegion->v2;
+	this->_regionRotate = AttachmentAtlasRegion->rotate;
+	this->_regionDegrees = AttachmentAtlasRegion->degrees;
+	this->_regionOffsetX = AttachmentAtlasRegion->offsetX;
+	this->_regionOffsetY = AttachmentAtlasRegion->offsetY;
+	this->_regionWidth = (float)AttachmentAtlasRegion->width;
+	this->_regionHeight = (float)AttachmentAtlasRegion->height;
+	this->_regionOriginalWidth = (float)AttachmentAtlasRegion->originalWidth;
+	this->_regionOriginalHeight = (float)AttachmentAtlasRegion->originalHeight;
+}
+
+TSharedRef<spine::MeshAttachment> spine::MeshAttachment::GetCloneWithNewAtlasRegion(TSharedRef<AtlasRegion> NewRegion)
+{
+	TSharedRef<spine::MeshAttachment> Result = MakeShared<spine::MeshAttachment>(*this);
+	Result->SetAttachmentAtlasRegion(NewRegion);
+	updateUVs();
+
+	return Result;
+}
+
+
 Attachment* MeshAttachment::copy() {
 	if (_parentMesh) return newLinkedMesh();
 
-	MeshAttachment* copy = new (__FILE__, __LINE__) MeshAttachment(getName());
-	copy->setRendererObject(getRendererObject());
+	MeshAttachment* copy = new   MeshAttachment(getName());
+	//copy->setRendererObject(getRendererObject());
 	copy->_regionU = _regionU;
 	copy->_regionV = _regionV;
 	copy->_regionU2 = _regionU2;
@@ -318,8 +347,8 @@ Attachment* MeshAttachment::copy() {
 }
 
 MeshAttachment* MeshAttachment::newLinkedMesh() {
-	MeshAttachment* copy = new (__FILE__, __LINE__) MeshAttachment(getName());
-	copy->setRendererObject(getRendererObject());
+	MeshAttachment* copy = new   MeshAttachment(getName());
+//	copy->setRendererObject(getRendererObject());
 	copy->_regionU = _regionU;
 	copy->_regionV = _regionV;
 	copy->_regionU2 = _regionU2;

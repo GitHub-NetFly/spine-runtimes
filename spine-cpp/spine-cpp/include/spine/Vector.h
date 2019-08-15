@@ -1,30 +1,31 @@
 /******************************************************************************
- * Spine Runtimes License Agreement
- * Last updated May 1, 2019. Replaces all prior versions.
+ * Spine Runtimes Software License v2.5
  *
- * Copyright (c) 2013-2019, Esoteric Software LLC
+ * Copyright (c) 2013-2016, Esoteric Software
+ * All rights reserved.
  *
- * Integration of the Spine Runtimes into software or otherwise creating
- * derivative works of the Spine Runtimes is permitted under the terms and
- * conditions of Section 2 of the Spine Editor License Agreement:
- * http://esotericsoftware.com/spine-editor-license
+ * You are granted a perpetual, non-exclusive, non-sublicensable, and
+ * non-transferable license to use, install, execute, and perform the Spine
+ * Runtimes software and derivative works solely for personal or internal
+ * use. Without the written permission of Esoteric Software (see Section 2 of
+ * the Spine Software License Agreement), you may not (a) modify, translate,
+ * adapt, or develop new applications using the Spine Runtimes or otherwise
+ * create derivative works or improvements of the Spine Runtimes or (b) remove,
+ * delete, alter, or obscure any trademarks or any copyright, trademark, patent,
+ * or other intellectual property or proprietary rights notices on or in the
+ * Software, including any copy thereof. Redistributions in binary or source
+ * form must include this license and terms.
  *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
- * "Products"), provided that each user of the Products must obtain their own
- * Spine Editor license and redistribution of the Products in any form must
- * include this license and copyright notice.
- *
- * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE LLC "AS IS" AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
- * NO EVENT SHALL ESOTERIC SOFTWARE LLC BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS
- * INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ESOTERIC SOFTWARE BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS INTERRUPTION, OR LOSS OF
+ * USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+ * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 
 #ifndef Spine_Vector_h
@@ -47,7 +48,7 @@ public:
 	Vector(const Vector &inVector) : _size(inVector._size), _capacity(inVector._capacity), _buffer(NULL) {
 		if (_capacity > 0) {
 			_buffer = allocate(_capacity);
-			for (size_t i = 0; i < _size; ++i) {
+			for (int32 i = 0; i < _size; ++i) {
 				construct(_buffer + i, inVector._buffer[i]);
 			}
 		}
@@ -59,24 +60,24 @@ public:
 	}
 
 	inline void clear() {
-		for (size_t i = 0; i < _size; ++i) {
+		for (int32 i = 0; i < _size; ++i) {
 			destroy(_buffer + (_size - 1 - i));
 		}
 
 		_size = 0;
 	}
 
-	inline size_t getCapacity() const {
+	inline int32 getCapacity() const {
 		return _capacity;
 	}
 
-	inline size_t size() const {
+	inline int32 size() const {
 		return _size;
 	}
 
-	inline void setSize(size_t newSize, const T &defaultValue) {
+	inline void setSize(int32 newSize, const T &defaultValue) {
 		assert(newSize >= 0);
-		size_t oldSize = _size;
+		int32 oldSize = _size;
 		_size = newSize;
 		if (_capacity < newSize) {
 			_capacity = (int) (_size * 1.75f);
@@ -84,13 +85,13 @@ public:
 			_buffer = spine::SpineExtension::realloc<T>(_buffer, _capacity, __FILE__, __LINE__);
 		}
 		if (oldSize < _size) {
-			for (size_t i = oldSize; i < _size; i++) {
+			for (int32 i = oldSize; i < _size; i++) {
 				construct(_buffer + i, defaultValue);
 			}
 		}
 	}
 
-	inline void ensureCapacity(size_t newCapacity = 0) {
+	inline void ensureCapacity(int32 newCapacity = 0) {
 		if (_capacity >= newCapacity) return;
 		_capacity = newCapacity;
 		_buffer = SpineExtension::realloc<T>(_buffer, newCapacity, __FILE__, __LINE__);
@@ -114,7 +115,7 @@ public:
 
 	inline void addAll(Vector<T> &inValue) {
 		ensureCapacity(this->size() + inValue.size());
-		for (size_t i = 0; i < inValue.size(); i++) {
+		for (int32 i = 0; i < inValue.size(); i++) {
 			add(inValue[i]);
 		}
 	}
@@ -124,13 +125,13 @@ public:
 		this->addAll(inValue);
 	}
 
-	inline void removeAt(size_t inIndex) {
+	inline void removeAt(int32 inIndex) {
 		assert(inIndex < _size);
 
 		--_size;
 
 		if (inIndex != _size) {
-			for (size_t i = inIndex; i < _size; ++i) {
+			for (int32 i = inIndex; i < _size; ++i) {
 				std::swap(_buffer[i], _buffer[i + 1]);
 			}
 		}
@@ -139,7 +140,7 @@ public:
 	}
 
 	inline bool contains(const T &inValue) {
-		for (size_t i = 0; i < _size; ++i) {
+		for (int32 i = 0; i < _size; ++i) {
 			if (_buffer[i] == inValue) {
 				return true;
 			}
@@ -149,7 +150,7 @@ public:
 	}
 
 	inline int indexOf(const T &inValue) {
-		for (size_t i = 0; i < _size; ++i) {
+		for (int32 i = 0; i < _size; ++i) {
 			if (_buffer[i] == inValue) {
 				return (int)i;
 			}
@@ -158,7 +159,7 @@ public:
 		return -1;
 	}
 
-	inline T &operator[](size_t inIndex) {
+	inline T &operator[](int32 inIndex) {
 		assert(inIndex < _size);
 
 		return _buffer[inIndex];
@@ -169,7 +170,7 @@ public:
 			return false;
 		}
 
-		for (size_t i = 0, n = lhs.size(); i < n; ++i) {
+		for (int32 i = 0, n = lhs.size(); i < n; ++i) {
 			if (lhs[i] != rhs[i]) {
 				return false;
 			}
@@ -187,11 +188,11 @@ public:
 	}
 
 private:
-	size_t _size;
-	size_t _capacity;
+	int32 _size;
+	int32 _capacity;
 	T *_buffer;
 
-	inline T *allocate(size_t n) {
+	inline T *allocate(int32 n) {
 		assert(n > 0);
 
 		T *ptr = SpineExtension::calloc<T>(n, __FILE__, __LINE__);

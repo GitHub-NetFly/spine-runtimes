@@ -1,53 +1,44 @@
-/******************************************************************************
- * Spine Runtimes License Agreement
- * Last updated May 1, 2019. Replaces all prior versions.
- *
- * Copyright (c) 2013-2019, Esoteric Software LLC
- *
- * Integration of the Spine Runtimes into software or otherwise creating
- * derivative works of the Spine Runtimes is permitted under the terms and
- * conditions of Section 2 of the Spine Editor License Agreement:
- * http://esotericsoftware.com/spine-editor-license
- *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
- * "Products"), provided that each user of the Products must obtain their own
- * Spine Editor license and redistribution of the Products in any form must
- * include this license and copyright notice.
- *
- * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE LLC "AS IS" AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
- * NO EVENT SHALL ESOTERIC SOFTWARE LLC BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS
- * INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *****************************************************************************/
+﻿
 
 #pragma once
 
+#include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "SpineSkeletonComponent.h"
-#include "spine/spine.h"
+
+#include "SpineAnimationGroupDataAsset.h"
+#include "SpineAnimNotify.h"
+#include "GameplayTagAssetInterface.h"
+#include "AbilitySystemInterface.h"
+#include "AbilitySystemComponent.h"
+
 #include "SpineSkeletonAnimationComponent.generated.h"
 
+namespace spine
+{
+	class Skeleton;
+	class SkeletonData;
+	class AnimationState;
+	class AnimationStateData;
+	class Atlas;
+	class Event;
+	class TrackEntry;
+	enum EventType;
+}
+
+class USpineSkeletonComponent;
+class USpineAtlasAsset;
+class USpineSkeletonDataAsset;
+class USpineSkeletonAnimationComponent;
+
 USTRUCT(BlueprintType, Category="Spine")
-struct SPINEPLUGIN_API FSpineEvent {
+struct SPINEPLUGIN_API FSpineEvent 
+{
 	GENERATED_BODY();
 
 public:
-	void SetEvent(spine::Event* event) {
-		Name = FString(UTF8_TO_TCHAR(event->getData().getName().buffer()));
-		if (!event->getStringValue().isEmpty()) {			
-			StringValue = FString(UTF8_TO_TCHAR(event->getStringValue().buffer()));
-		}
-		this->IntValue = event->getIntValue();
-		this->FloatValue = event->getFloatValue();
-		this->Time = event->getTime();
-	}
+	void SetEvent(const spine::Event& InEvent);
+	
 
 	UPROPERTY(BlueprintReadonly)
 	FString Name;
@@ -65,6 +56,7 @@ public:
 	float Time;
 };
 
+class UTrackEntry;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSpineAnimationStartDelegate, UTrackEntry*, entry);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FSpineAnimationEventDelegate, UTrackEntry*, entry, FSpineEvent, evt);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSpineAnimationInterruptDelegate, UTrackEntry*, entry);
@@ -72,98 +64,103 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSpineAnimationCompleteDelegate, UTr
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSpineAnimationEndDelegate, UTrackEntry*, entry);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSpineAnimationDisposeDelegate, UTrackEntry*, entry);
 
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSpineAnimationStateMachineDelegate);
+
+
 UCLASS(ClassGroup=(Spine), meta=(BlueprintSpawnableComponent), BlueprintType)
 class SPINEPLUGIN_API UTrackEntry: public UObject {
 	GENERATED_BODY ()
 
 public:
+
+	void SetTrackEntry (TSharedPtr<spine::TrackEntry> trackEntry);
+	TSharedPtr<spine::TrackEntry> GetTrackEntry() { return entry; }
 	
-	UTrackEntry () { }		
-
-	void SetTrackEntry (spine::TrackEntry* trackEntry);
-	spine::TrackEntry* GetTrackEntry() { return entry; }
-	
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	int GetTrackIndex () { return entry ? entry->getTrackIndex() : 0; }
-
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	bool GetLoop () { return entry ? entry->getLoop() : false; }
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	void SetLoop(bool loop) { if (entry) entry->setLoop(loop); }
-	
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	float GetEventThreshold () { return entry ? entry->getEventThreshold() : 0; }
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	void SetEventThreshold(float eventThreshold) { if (entry) entry->setEventThreshold(eventThreshold); }
-
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	float GetAttachmentThreshold() { return entry ? entry->getAttachmentThreshold() : 0; }
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	void SetAttachmentThreshold(float attachmentThreshold) { if (entry) entry->setAttachmentThreshold(attachmentThreshold); }
-
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	float GetDrawOrderThreshold() { return entry ? entry->getDrawOrderThreshold() : 0; }
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	void SetDrawOrderThreshold(float drawOrderThreshold) { if (entry) entry->setDrawOrderThreshold(drawOrderThreshold); }
-
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	float GetAnimationStart() { return entry ? entry->getAnimationStart() : 0; }
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	void SetAnimationStart(float animationStart) { if (entry) entry->setAnimationStart(animationStart); }
-
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	float GetAnimationEnd() { return entry ? entry->getAnimationEnd() : 0; }
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	void SetAnimationEnd(float animationEnd) { if (entry) entry->setAnimationEnd(animationEnd); }
-
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	float GetAnimationLast() { return entry ? entry->getAnimationLast() : 0; }
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	void SetAnimationLast(float animationLast) { if (entry) entry->setAnimationLast(animationLast); }
-
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	float GetDelay() { return entry ? entry->getDelay() : 0; }
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	void SetDelay(float delay) { if (entry) entry->setDelay(delay); }
-
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	float GetTrackTime() { return entry ? entry->getTrackTime() : 0; }
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	void SetTrackTime(float trackTime) { if (entry) entry->setTrackTime(trackTime); }
-
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	float GetTrackEnd() { return entry ? entry->getTrackEnd() : 0; }
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	void SetTrackEnd(float trackEnd) { if (entry) entry->setTrackEnd(trackEnd); }
-
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	float GetTimeScale() { return entry ? entry->getTimeScale() : 0; }
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	void SetTimeScale(float timeScale) { if (entry) entry->setTimeScale(timeScale); }
-
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	float GetAlpha() { return entry ? entry->getAlpha() : 0; }
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	void SetAlpha(float alpha) { if (entry) entry->setAlpha(alpha); }
-
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	float GetMixTime() { return entry ? entry->getMixTime() : 0; }
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	void SetMixTime(float mixTime) { if (entry) entry->setMixTime(mixTime); }
-
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	float GetMixDuration() { return entry ? entry->getMixDuration() : 0; }
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|TrackEntry")
-	void SetMixDuration(float mixDuration) { if (entry) entry->setMixDuration(mixDuration); }
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+	int GetTrackIndex();
 
 	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
-	FString getAnimationName() { return entry ? entry->getAnimation()->getName().buffer() : ""; }
+		bool GetLoop();
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetLoop(bool loop);
+	
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		float GetEventThreshold();
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetEventThreshold(float eventThreshold);
 
 	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
-	float getAnimationDuration() { return entry ? entry->getAnimation()->getDuration(): 0; }
+		float GetAttachmentThreshold();
 
 	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
-	float isValidAnimation() { return entry != nullptr; }
+		void SetAttachmentThreshold(float attachmentThreshold);
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		float GetDrawOrderThreshold();
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetDrawOrderThreshold(float drawOrderThreshold);
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		float GetAnimationStart();
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetAnimationStart(float animationStart);
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		float GetAnimationEnd();
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetAnimationEnd(float animationEnd);
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		float GetAnimationLast();
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetAnimationLast(float animationLast);
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		float GetDelay();
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetDelay(float delay);
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		float GetTrackTime();
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetTrackTime(float trackTime);
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		float GetTrackEnd();
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetTrackEnd(float trackEnd);
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		float GetTimeScale();
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetTimeScale(float timeScale);
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		float GetAlpha();
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetAlpha(float alpha);
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		float GetMixTime();
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetMixTime(float mixTime);
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		float GetMixDuration();
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetMixDuration(float mixDuration);
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		FString GetAnimationName();
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		float GetAnimationDuration();
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+	bool IsValidAnimation() { return entry.IsValid(); }
 
 	UPROPERTY(BlueprintAssignable, Category = "Components|Spine|TrackEntry")
 	FSpineAnimationStartDelegate AnimationStart;
@@ -184,7 +181,7 @@ public:
 	FSpineAnimationDisposeDelegate AnimationDispose;
 
 protected:
-	spine::TrackEntry* entry = nullptr;
+	TSharedPtr<spine::TrackEntry> entry;
 };
 
 class USpineAtlasAsset;
@@ -193,7 +190,7 @@ class SPINEPLUGIN_API USpineSkeletonAnimationComponent: public USpineSkeletonCom
 	GENERATED_BODY()
 
 public:
-	spine::AnimationState* GetAnimationState () { return state; };
+	TSharedPtr<spine::AnimationState> GetAnimationState () { return SpineAnimState; };
 		
 	USpineSkeletonAnimationComponent ();
 	
@@ -205,13 +202,15 @@ public:
 
 	//Added functions for manual configuration
 
+	void OnSpineAnimStateEventReceived(spine::AnimationState* State, enum spine::EventType Type, TSharedRef<spine::TrackEntry> Entry, const spine::Event& Event);
+
 	/* Manages if this skeleton should update automatically or is paused. */
 	UFUNCTION(BlueprintCallable, Category="Components|Spine|Animation")
-	void SetAutoPlay(bool bInAutoPlays);
+	void SetPaused(bool bPaused);
 
 	/* Directly set the time of the current animation, will clamp to animation range. */
 	UFUNCTION(BlueprintCallable, Category = "Components|Spine|Animation")
-	void SetPlaybackTime(float InPlaybackTime, bool bCallDelegates = true);
+	void SetPlaybackTime(float InPlaybackTime);
 	
 	// Blueprint functions
 	UFUNCTION(BlueprintCallable, Category="Components|Spine|Animation")
@@ -222,6 +221,14 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="Components|Spine|Animation")
 	UTrackEntry* SetAnimation (int trackIndex, FString animationName, bool loop);
+
+	//
+	UTrackEntry* PlayAbilityAnimation(const FSpineAnimationSpec& AnimationSpec, bool loop);
+
+	void StopAbilityAnimation();
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|Animation")
+	UTrackEntry* SetAnimationWitSpec(const FSpineAnimationSpec& AnimationSpec, bool loop);
 	
 	UFUNCTION(BlueprintCallable, Category="Components|Spine|Animation")
 	UTrackEntry* AddAnimation (int trackIndex, FString animationName, bool loop, float delay);
@@ -241,6 +248,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Components|Spine|Animation")
 	void ClearTrack (int trackIndex);
 	
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|Animation")
+	void UnbindSpineAnimCallbackFrom(UObject* Object);
+
 	UPROPERTY(BlueprintAssignable, Category="Components|Spine|Animation")
 	FSpineAnimationStartDelegate AnimationStart;
 
@@ -249,6 +259,20 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category="Components|Spine|Animation")
 	FSpineAnimationEventDelegate AnimationEvent;
+
+	UPROPERTY(BlueprintAssignable, Category = "Components|Spine|Animation")
+	FSpineAnimationStateMachineDelegate  AnimationStateMachineOn;
+
+	UPROPERTY(BlueprintAssignable, Category = "Components|Spine|Animation")
+	FSpineAnimationStateMachineDelegate AnimationStateMachineOff;
+
+	void Internal_OnAnimationEvent(UTrackEntry* Entry, FSpineEvent Evt);
+
+	UFUNCTION(BlueprintCallable)
+	void AddDynamicAnimEventListener(const FSpineAnimationSpec& AnimDesc, FString AnimEvent, FGameplayTag RemapToTag);
+
+	UPROPERTY(VisibleAnywhere,Transient)
+	TMap<FSpineAnimEventDesc, FGameplayTag>  DynamicAnimEventListenerMap;
 
 	UPROPERTY(BlueprintAssignable, Category="Components|Spine|Animation")
 	FSpineAnimationCompleteDelegate AnimationComplete;
@@ -268,12 +292,24 @@ public:
 	// used in C event callback. Needs to be public as we can't call
 	// protected methods from plain old C function.
 	void GCTrackEntry(UTrackEntry* entry) { trackEntries.Remove(entry); }
-protected:
+
+#if WITH_EDITOR
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
+
+
 	virtual void CheckState () override;
-	virtual void InternalTick(float DeltaTime, bool CallDelegates = true, bool Preview = false) override;
+	virtual void InternalTick_SkeletonPose(float DeltaTime) override;
 	virtual void DisposeState () override;
-	
-	spine::AnimationState* state;
+
+	virtual bool ApplyReplaceAttachment(const FReplaceAttachmentGroup& ReplacementGroup) override;
+
+	virtual bool CancelReplaceAttachment(const FReplaceAttachmentGroup& ReplacementGroup) override;
+
+	virtual bool SetSkin(FString SkinName) override;
+
+protected:
+	TSharedPtr<spine::AnimationState> SpineAnimState;
 
 	// keep track of track entries so they won't get GCed while
 	// in transit within a blueprint
@@ -281,9 +317,8 @@ protected:
 	TSet<UTrackEntry*> trackEntries;
 
 private:
-	/* If the animation should update automatically. */
-	UPROPERTY()
-	bool bAutoPlaying;
+	UPROPERTY(Transient)
+	bool bIsPaused = false;
 
 	FString lastPreviewAnimation;
 	FString lastPreviewSkin;

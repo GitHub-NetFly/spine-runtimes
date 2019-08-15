@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 
 namespace UnrealBuildTool.Rules
@@ -7,7 +7,13 @@ namespace UnrealBuildTool.Rules
 	{
 		public SpinePlugin(ReadOnlyTargetRules Target) : base(Target)
 		{
-            PrivatePCHHeaderFile = "Private/SpinePluginPrivatePCH.h";
+            //development build 也不需要优化代码.
+            OptimizeCode = CodeOptimization.InShippingBuildsOnly;
+
+            // PrivatePCHHeaderFile = "Private/SpinePluginPrivatePCH.h";
+
+            //enable IWYU
+            PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
             PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "Public"));
 			PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "Public/spine-cpp/include"));
@@ -15,8 +21,14 @@ namespace UnrealBuildTool.Rules
 			PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "Private"));
 			PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "Public/spine-cpp/include"));
 
-            PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "ProceduralMeshComponent", "UMG", "Slate", "SlateCore" });
-			PublicDefinitions.Add("SPINE_UE4");
-		}
-	}
+            PublicDependencyModuleNames.AddRange(new string[] { "Core","GameplayTags", "GameplayAbilities", "CoreUObject", "Engine", "RHI", "ProceduralMeshComponent", "UMG", "Slate", "SlateCore" });
+
+            if (Target.bBuildEditor == true)
+            {
+                PrivateDependencyModuleNames.Add("UnrealEd");
+         //       PrivateDependencyModuleNames.Add("Slate");
+            }
+
+        }
+    }
 }

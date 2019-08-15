@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 
 namespace UnrealBuildTool.Rules
@@ -7,7 +7,8 @@ namespace UnrealBuildTool.Rules
 	{
 		public SpineEditorPlugin(ReadOnlyTargetRules Target) : base(Target)
 		{
-            PrivatePCHHeaderFile = "Private/SpineEditorPluginPrivatePCH.h";
+            //enable IWYU
+            PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
             PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "Public"));
 			PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "../SpinePlugin/Public/spine-cpp/include"));
@@ -15,23 +16,35 @@ namespace UnrealBuildTool.Rules
 			PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "Private"));
 			PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "../SpinePlugin/Public/spine-cpp/include"));
 
-            PublicDependencyModuleNames.AddRange(new string[] {
+
+
+            PublicDependencyModuleNames.AddRange(
+                new string[] {
+                "SpinePlugin",
                 "Core",
                 "CoreUObject",
                 "Engine",
-                "UnrealEd",
-                "SpinePlugin"
-            });
+                "UnrealEd" ,
+                "AssetRegistry",
+                "AssetTools",
+                });
 
-            PublicIncludePathModuleNames.AddRange(new string[] {
-               "AssetTools",
-               "AssetRegistry"
-            });
-
-            DynamicallyLoadedModuleNames.AddRange(new string[] {
-               "AssetTools",
-               "AssetRegistry"
-            });
-		}
+            PrivateDependencyModuleNames.AddRange(
+                new string[] {
+                        "BlueprintGraph",
+                        "KismetCompiler",
+                        "GraphEditor",
+                        "Slate",
+                        "SlateCore",
+                        "EditorStyle",
+                        "PropertyEditor",
+                        "EditorWidgets",
+                         "ClassViewer",
+                         "InternationalizationSettings",
+                         "ConfigEditor",
+                         "InputCore",
+                }
+            );
+        }
 	}
 }

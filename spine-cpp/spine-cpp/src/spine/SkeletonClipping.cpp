@@ -1,35 +1,34 @@
-/******************************************************************************
- * Spine Runtimes License Agreement
- * Last updated May 1, 2019. Replaces all prior versions.
- *
- * Copyright (c) 2013-2019, Esoteric Software LLC
- *
- * Integration of the Spine Runtimes into software or otherwise creating
- * derivative works of the Spine Runtimes is permitted under the terms and
- * conditions of Section 2 of the Spine Editor License Agreement:
- * http://esotericsoftware.com/spine-editor-license
- *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
- * "Products"), provided that each user of the Products must obtain their own
- * Spine Editor license and redistribution of the Products in any form must
- * include this license and copyright notice.
- *
- * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE LLC "AS IS" AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
- * NO EVENT SHALL ESOTERIC SOFTWARE LLC BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS
- * INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *****************************************************************************/
+﻿/******************************************************************************
+* Spine Runtimes Software License v2.5
+*
+* Copyright (c) 2013-2016, Esoteric Software
+* All rights reserved.
+*
+* You are granted a perpetual, non-exclusive, non-sublicensable, and
+* non-transferable license to use, install, execute, and perform the Spine
+* Runtimes software and derivative works solely for personal or internal
+* use. Without the written permission of Esoteric Software (see Section 2 of
+* the Spine Software License Agreement), you may not (a) modify, translate,
+* adapt, or develop new applications using the Spine Runtimes or otherwise
+* create derivative works or improvements of the Spine Runtimes or (b) remove,
+* delete, alter, or obscure any trademarks or any copyright, trademark, patent,
+* or other intellectual property or proprietary rights notices on or in the
+* Software, including any copy thereof. Redistributions in binary or source
+* form must include this license and terms.
+*
+* THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE "AS IS" AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL ESOTERIC SOFTWARE BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS INTERRUPTION, OR LOSS OF
+* USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+* IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+* POSSIBILITY OF SUCH DAMAGE.
+*****************************************************************************/
 
-#ifdef SPINE_UE4
-#include "SpinePluginPrivatePCH.h"
-#endif
+
 
 #include <spine/SkeletonClipping.h>
 
@@ -45,7 +44,7 @@ SkeletonClipping::SkeletonClipping() : _clipAttachment(NULL) {
 	_clippedUVs.ensureCapacity(128);
 }
 
-size_t SkeletonClipping::clipStart(Slot &slot, ClippingAttachment *clip) {
+int32 SkeletonClipping::clipStart(Slot &slot, ClippingAttachment *clip) {
 	if (_clipAttachment != NULL) {
 		return 0;
 	}
@@ -58,7 +57,7 @@ size_t SkeletonClipping::clipStart(Slot &slot, ClippingAttachment *clip) {
 	makeClockwise(_clippingPolygon);
 	_clippingPolygons = &_triangulator.decompose(_clippingPolygon, _triangulator.triangulate(_clippingPolygon));
 
-	for (size_t i = 0; i < _clippingPolygons->size(); ++i) {
+	for (int32 i = 0; i < _clippingPolygons->size(); ++i) {
 		Vector<float> *polygonP = (*_clippingPolygons)[i];
 		Vector<float> &polygon = *polygonP;
 		makeClockwise(polygon);
@@ -88,24 +87,24 @@ void SkeletonClipping::clipEnd() {
 	_clippingPolygon.clear();
 }
 
-void SkeletonClipping::clipTriangles(Vector<float> &vertices, Vector<unsigned short> &triangles, Vector<float> &uvs, size_t stride) {
+void SkeletonClipping::clipTriangles(Vector<float> &vertices, Vector<unsigned short> &triangles, Vector<float> &uvs, int32 stride) {
 	clipTriangles(vertices.buffer(), triangles.buffer(), triangles.size(), uvs.buffer(), stride);
 }
 
 void SkeletonClipping::clipTriangles(float *vertices, unsigned short *triangles,
-									 size_t trianglesLength, float *uvs, size_t stride) {
+									 int32 trianglesLength, float *uvs, int32 stride) {
 	Vector<float> &clipOutput = _clipOutput;
 	Vector<float> &clippedVertices = _clippedVertices;
 	Vector<unsigned short> &clippedTriangles = _clippedTriangles;
 	Vector<Vector<float> *> &polygons = *_clippingPolygons;
-	size_t polygonsCount = (*_clippingPolygons).size();
+	int32 polygonsCount = (*_clippingPolygons).size();
 
-	size_t index = 0;
+	int32 index = 0;
 	clippedVertices.clear();
 	_clippedUVs.clear();
 	clippedTriangles.clear();
 
-	size_t i = 0;
+	int32 i = 0;
 	continue_outer:
 	for (; i < trianglesLength; i += 3) {
 		int vertexOffset = triangles[i] * stride;
@@ -120,20 +119,20 @@ void SkeletonClipping::clipTriangles(float *vertices, unsigned short *triangles,
 		float x3 = vertices[vertexOffset], y3 = vertices[vertexOffset + 1];
 		float u3 = uvs[vertexOffset], v3 = uvs[vertexOffset + 1];
 
-		for (size_t p = 0; p < polygonsCount; p++) {
-			size_t s = clippedVertices.size();
+		for (int32 p = 0; p < polygonsCount; p++) {
+			int32 s = clippedVertices.size();
 			if (clip(x1, y1, x2, y2, x3, y3, &(*polygons[p]), &clipOutput)) {
-				size_t clipOutputLength = clipOutput.size();
+				int32 clipOutputLength = clipOutput.size();
 				if (clipOutputLength == 0) {
 					continue;
 				}
 				float d0 = y2 - y3, d1 = x3 - x2, d2 = x1 - x3, d4 = y3 - y1;
 				float d = 1 / (d0 * d2 + d1 * (y1 - y3));
 
-				size_t clipOutputCount = clipOutputLength >> 1;
+				int32 clipOutputCount = clipOutputLength >> 1;
 				clippedVertices.setSize(s + clipOutputCount * 2, 0);
 				_clippedUVs.setSize(s + clipOutputCount * 2, 0);
-				for (size_t ii = 0; ii < clipOutputLength; ii += 2) {
+				for (int32 ii = 0; ii < clipOutputLength; ii += 2) {
 					float x = clipOutput[ii], y = clipOutput[ii + 1];
 					clippedVertices[s] = x;
 					clippedVertices[s + 1] = y;
@@ -149,7 +148,7 @@ void SkeletonClipping::clipTriangles(float *vertices, unsigned short *triangles,
 				s = clippedTriangles.size();
 				clippedTriangles.setSize(s + 3 * (clipOutputCount - 2), 0);
 				clipOutputCount--;
-				for (size_t ii = 1; ii < clipOutputCount; ii++) {
+				for (int32 ii = 1; ii < clipOutputCount; ii++) {
 					clippedTriangles[s] = (unsigned short)(index);
 					clippedTriangles[s + 1] = (unsigned short)(index + ii);
 					clippedTriangles[s + 2] = (unsigned short)(index + ii + 1);
@@ -228,15 +227,15 @@ bool SkeletonClipping::clip(float x1, float y1, float x2, float y2, float x3, fl
 	output->clear();
 
 	Vector<float> &clippingVertices = *clippingArea;
-	size_t clippingVerticesLast = clippingArea->size() - 4;
-	for (size_t i = 0;; i += 2) {
+	int32 clippingVerticesLast = clippingArea->size() - 4;
+	for (int32 i = 0;; i += 2) {
 		float edgeX = clippingVertices[i], edgeY = clippingVertices[i + 1];
 		float edgeX2 = clippingVertices[i + 2], edgeY2 = clippingVertices[i + 3];
 		float deltaX = edgeX - edgeX2, deltaY = edgeY - edgeY2;
 
 		Vector<float> &inputVertices = *input;
-		size_t inputVerticesLength = input->size() - 2, outputStart = output->size();
-		for (size_t ii = 0; ii < inputVerticesLength; ii += 2) {
+		int32 inputVerticesLength = input->size() - 2, outputStart = output->size();
+		for (int32 ii = 0; ii < inputVerticesLength; ii += 2) {
 			float inputX = inputVertices[ii], inputY = inputVertices[ii + 1];
 			float inputX2 = inputVertices[ii + 2], inputY2 = inputVertices[ii + 3];
 			bool side2 = deltaX * (inputY2 - edgeY2) - deltaY * (inputX2 - edgeX2) > 0;
@@ -296,7 +295,7 @@ bool SkeletonClipping::clip(float x1, float y1, float x2, float y2, float x3, fl
 
 	if (originalOutput != output) {
 		originalOutput->clear();
-		for (size_t i = 0, n = output->size() - 2; i < n; ++i) {
+		for (int32 i = 0, n = output->size() - 2; i < n; ++i) {
 			originalOutput->add((*output)[i]);
 		}
 	} else {
@@ -307,12 +306,12 @@ bool SkeletonClipping::clip(float x1, float y1, float x2, float y2, float x3, fl
 }
 
 void SkeletonClipping::makeClockwise(Vector<float> &polygon) {
-	size_t verticeslength = polygon.size();
+	int32 verticeslength = polygon.size();
 
 	float area =
 			polygon[verticeslength - 2] * polygon[1] - polygon[0] * polygon[verticeslength - 1], p1x, p1y, p2x, p2y;
 
-	for (size_t i = 0, n = verticeslength - 3; i < n; i += 2) {
+	for (int32 i = 0, n = verticeslength - 3; i < n; i += 2) {
 		p1x = polygon[i];
 		p1y = polygon[i + 1];
 		p2x = polygon[i + 2];
@@ -324,7 +323,7 @@ void SkeletonClipping::makeClockwise(Vector<float> &polygon) {
 		return;
 	}
 
-	for (size_t i = 0, lastX = verticeslength - 2, n = verticeslength >> 1; i < n; i += 2) {
+	for (int32 i = 0, lastX = verticeslength - 2, n = verticeslength >> 1; i < n; i += 2) {
 		float x = polygon[i], y = polygon[i + 1];
 		int other = lastX - i;
 		polygon[i] = polygon[other];

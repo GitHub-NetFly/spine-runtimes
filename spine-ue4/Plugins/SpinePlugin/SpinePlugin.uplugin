@@ -1,4 +1,4 @@
-{
+﻿{
 	"FileVersion" : 3,
 	"Version" : 1,
 	"VersionName" : "1.0",
@@ -13,7 +13,7 @@
 	"EnabledByDefault" : true,
 	"CanContainContent" : true,
 	"IsBetaVersion" : false,
-	"Installed" : false,
+	"Installed" : true,
   "Modules": [
     {
       "Name": "SpinePlugin",
@@ -22,12 +22,17 @@
     },
     {
       "Name": "SpineEditorPlugin",
-      "Type": "Editor"
+      "Type": "Developer",
+	    "LoadingPhase": "PreDefault"
     }
   ],
   "Plugins": [
     {
       "Name": "ProceduralMeshComponent",
+      "Enabled": true
+    },
+    {
+      "Name": "GameplayAbilities",
       "Enabled": true
     }
   ]

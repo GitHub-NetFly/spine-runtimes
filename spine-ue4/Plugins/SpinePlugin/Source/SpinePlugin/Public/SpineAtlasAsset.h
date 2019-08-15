@@ -1,74 +1,74 @@
-/******************************************************************************
- * Spine Runtimes License Agreement
- * Last updated May 1, 2019. Replaces all prior versions.
- *
- * Copyright (c) 2013-2019, Esoteric Software LLC
- *
- * Integration of the Spine Runtimes into software or otherwise creating
- * derivative works of the Spine Runtimes is permitted under the terms and
- * conditions of Section 2 of the Spine Editor License Agreement:
- * http://esotericsoftware.com/spine-editor-license
- *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
- * "Products"), provided that each user of the Products must obtain their own
- * Spine Editor license and redistribution of the Products in any form must
- * include this license and copyright notice.
- *
- * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE LLC "AS IS" AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
- * NO EVENT SHALL ESOTERIC SOFTWARE LLC BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS
- * INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *****************************************************************************/
-
+﻿
 #pragma once
 
-#include "Engine.h"
-#include "spine/spine.h"
+
+#include "CoreMinimal.h"
+#include "Engine/Engine.h"
+#include <spine/Atlas.h>
 #include "SpineAtlasAsset.generated.h"
 
-UCLASS(BlueprintType, ClassGroup=(Spine))
-class SPINEPLUGIN_API USpineAtlasAsset: public UObject {
+
+namespace spine
+{
+	class Skeleton;
+	class SkeletonData;
+	class AnimationState;
+	class AnimationStateData;
+	class Atlas;
+	class AtlasPage;
+}
+
+class USpineSkeletonComponent;
+class USpineAtlasAsset;
+class USpineSkeletonDataAsset;
+
+
+
+UCLASS(BlueprintType, ClassGroup = (Spine))
+class SPINEPLUGIN_API USpineAtlasAsset : public UObject 
+{
 	GENERATED_BODY()
-	
-public:
-	spine::Atlas* GetAtlas ();
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<UTexture2D*> atlasPages;
-	
-	void SetRawData(const FString &RawData);
-	
-	FName GetAtlasFileName () const;
-	
-	virtual void BeginDestroy () override;
-	
-protected:
-	spine::Atlas* atlas = nullptr;
-	
-	UPROPERTY()
-	FString rawData;
-	
-	UPROPERTY()
-	FName atlasFileName;
-	
-#if WITH_EDITORONLY_DATA
 
 public:
-	void SetAtlasFileName (const FName &AtlasFileName);
-	
+	TSharedPtr<class spine::Atlas> GetAtlas() { return MyAtlas; }
+
+	UPROPERTY(EditDefaultsOnly, EditFixedSize)
+	TMap<FString, UTexture2D*> AtlasTexturePageMap;
+
+	void SetRawData(const FString &RawData);
+
+private:
+	UPROPERTY()
+	TArray<UTexture2D*> atlasTexturePages_DEPRECATED;
+
+public:
+
+#if WITH_EDITORONLY_DATA
+
+	UPROPERTY(EditAnywhere, Instanced, Category = ImportSettings)
+	class  UAssetImportData* AssetImportData;
+#endif //WITH_EDITORONLY_DATA
+
 protected:
-	UPROPERTY(VisibleAnywhere, Instanced, Category=ImportSettings)
-	class UAssetImportData* importData;
-	
-	virtual void PostInitProperties ( ) override;
-	virtual void GetAssetRegistryTags(TArray<FAssetRegistryTag>& OutTags) const override;
-	virtual void Serialize (FArchive& Ar) override;
+
+	UPROPERTY()
+	FString rawData;
+
+private:
+	TSharedPtr<class spine::Atlas> BuildAtlas();
+
+	TSharedPtr<class spine::Atlas> MyAtlas;
+
+private:
+#if WITH_EDITOR
+
+	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+
 #endif
+	
+
+	virtual void PostLoad() override;
+	virtual void PostInitProperties() override;
+	virtual void GetAssetRegistryTags(TArray<FAssetRegistryTag>& OutTags) const override;
+	//virtual void Serialize (FArchive& Ar) override;
 };

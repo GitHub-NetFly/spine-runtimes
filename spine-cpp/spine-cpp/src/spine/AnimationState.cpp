@@ -1,35 +1,34 @@
-/******************************************************************************
- * Spine Runtimes License Agreement
- * Last updated May 1, 2019. Replaces all prior versions.
- *
- * Copyright (c) 2013-2019, Esoteric Software LLC
- *
- * Integration of the Spine Runtimes into software or otherwise creating
- * derivative works of the Spine Runtimes is permitted under the terms and
- * conditions of Section 2 of the Spine Editor License Agreement:
- * http://esotericsoftware.com/spine-editor-license
- *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
- * "Products"), provided that each user of the Products must obtain their own
- * Spine Editor license and redistribution of the Products in any form must
- * include this license and copyright notice.
- *
- * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE LLC "AS IS" AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
- * NO EVENT SHALL ESOTERIC SOFTWARE LLC BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS
- * INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *****************************************************************************/
+﻿/******************************************************************************
+* Spine Runtimes Software License v2.5
+*
+* Copyright (c) 2013-2016, Esoteric Software
+* All rights reserved.
+*
+* You are granted a perpetual, non-exclusive, non-sublicensable, and
+* non-transferable license to use, install, execute, and perform the Spine
+* Runtimes software and derivative works solely for personal or internal
+* use. Without the written permission of Esoteric Software (see Section 2 of
+* the Spine Software License Agreement), you may not (a) modify, translate,
+* adapt, or develop new applications using the Spine Runtimes or otherwise
+* create derivative works or improvements of the Spine Runtimes or (b) remove,
+* delete, alter, or obscure any trademarks or any copyright, trademark, patent,
+* or other intellectual property or proprietary rights notices on or in the
+* Software, including any copy thereof. Redistributions in binary or source
+* form must include this license and terms.
+*
+* THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE "AS IS" AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL ESOTERIC SOFTWARE BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS INTERRUPTION, OR LOSS OF
+* USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+* IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+* POSSIBILITY OF SUCH DAMAGE.
+*****************************************************************************/
 
-#ifdef SPINE_UE4
-#include "SpinePluginPrivatePCH.h"
-#endif
+
 
 #include <spine/AnimationState.h>
 #include <spine/Animation.h>
@@ -46,26 +45,26 @@
 
 using namespace spine;
 
-void dummyOnAnimationEventFunc(AnimationState *state, spine::EventType type, TrackEntry *entry, Event *event = NULL) {
-	SP_UNUSED(state);
-	SP_UNUSED(type);
-	SP_UNUSED(entry);
-	SP_UNUSED(event);
-}
+//void dummyOnAnimationEventFunc(AnimationState *state, spine::EventType type, TrackEntry *entry, Event *event = NULL) {
+//	SP_UNUSED(state);
+//	SP_UNUSED(type);
+//	SP_UNUSED(entry);
+//	SP_UNUSED(event);
+//}
 
 TrackEntry::TrackEntry() : _animation(NULL), _next(NULL), _mixingFrom(NULL), _mixingTo(0), _trackIndex(0), _loop(false), _holdPrevious(false),
 						   _eventThreshold(0), _attachmentThreshold(0), _drawOrderThreshold(0), _animationStart(0),
 						   _animationEnd(0), _animationLast(0), _nextAnimationLast(0), _delay(0), _trackTime(0),
 						   _trackLast(0), _nextTrackLast(0), _trackEnd(0), _timeScale(1.0f), _alpha(0), _mixTime(0),
-						   _mixDuration(0), _interruptAlpha(0), _totalAlpha(0), _mixBlend(MixBlend_Replace),
-						   _listener(dummyOnAnimationEventFunc), _listenerObject(NULL) {
+						   _mixDuration(0), _interruptAlpha(0), _totalAlpha(0), _mixBlend(MixBlend_Replace)
+						   
+{
 }
 
-TrackEntry::~TrackEntry() { }
 
 int TrackEntry::getTrackIndex() { return _trackIndex; }
 
-Animation *TrackEntry::getAnimation() { return _animation; }
+TSharedPtr<spine::Animation> TrackEntry::getAnimation() { return _animation; }
 
 bool TrackEntry::getLoop() { return _loop; }
 
@@ -135,7 +134,7 @@ float TrackEntry::getDrawOrderThreshold() { return _drawOrderThreshold; }
 
 void TrackEntry::setDrawOrderThreshold(float inValue) { _drawOrderThreshold = inValue; }
 
-TrackEntry *TrackEntry::getNext() { return _next; }
+TWeakPtr < TrackEntry> TrackEntry::getNext() { return _next; }
 
 bool TrackEntry::isComplete() {
 	return _trackTime >= _animationEnd - _animationStart;
@@ -149,187 +148,234 @@ float TrackEntry::getMixDuration() { return _mixDuration; }
 
 void TrackEntry::setMixDuration(float inValue) { _mixDuration = inValue; }
 
-TrackEntry *TrackEntry::getMixingFrom() { return _mixingFrom; }
+TWeakPtr < TrackEntry> TrackEntry::getMixingFrom() { return _mixingFrom; }
 
-TrackEntry *TrackEntry::getMixingTo() { return _mixingTo; }
+TWeakPtr < TrackEntry> TrackEntry::getMixingTo() { return _mixingTo; }
 
 void TrackEntry::setMixBlend(MixBlend blend) { _mixBlend = blend; }
 
 MixBlend TrackEntry::getMixBlend() { return _mixBlend; }
 
-void TrackEntry::resetRotationDirections() {
-	_timelinesRotation.clear();
+void TrackEntry::resetRotationDirections()
+{
+	_timelinesRotation.Empty();
 }
 
-void TrackEntry::setListener(AnimationStateListener inValue) {
+void TrackEntry::setListener(FSpineAnimationStateCallbackDelegate inValue)
+{
 	_listener = inValue;
-	_listenerObject = NULL;
 }
 
-void TrackEntry::setListener(AnimationStateListenerObject* inValue) {
-	_listener = dummyOnAnimationEventFunc;
-	_listenerObject = inValue;
-}
+
 
 void TrackEntry::reset() {
-	_animation = NULL;
-	_next = NULL;
-	_mixingFrom = NULL;
-	_mixingTo = NULL;
+	_animation = nullptr;
+	_next = nullptr;
+	_mixingFrom = nullptr;
+	_mixingTo = nullptr;
 
-	setRendererObject(NULL);
+	SetRendererObject(nullptr);
 
-	_timelineMode.clear();
-	_timelineHoldMix.clear();
-	_timelinesRotation.clear();
+	_timelineMode.Empty();
+	_timelineHoldMix.Empty();
+	_timelinesRotation.Empty();
 
-	_listener = dummyOnAnimationEventFunc;
-	_listenerObject = NULL;
+	_listener.Unbind();
 }
 
-EventQueueEntry::EventQueueEntry(EventType eventType, TrackEntry *trackEntry, Event *event) :
-		_type(eventType),
-		_entry(trackEntry),
-		_event(event) {
+EventQueueEntry::EventQueueEntry(EventType eventType, TSharedRef<TrackEntry> trackEntry, Event* InEvent /*= nullptr*/) :
+	_type(eventType),
+	_entry(trackEntry)
+{
+	if (InEvent)
+	{
+		_event = *InEvent;
+	}
 }
 
-EventQueue *EventQueue::newEventQueue(AnimationState &state, Pool<TrackEntry> &trackEntryPool) {
-	return new(__FILE__, __LINE__) EventQueue(state, trackEntryPool);
-}
 
-EventQueueEntry EventQueue::newEventQueueEntry(EventType eventType, TrackEntry *entry, Event *event) {
-	return EventQueueEntry(eventType, entry, event);
-}
-
-EventQueue::EventQueue(AnimationState &state, Pool<TrackEntry> &trackEntryPool) : _state(state),
-																				  _trackEntryPool(trackEntryPool),
-																				  _drainDisabled(false) {
+EventQueue::EventQueue(AnimationState &state) : _state(state)
+{
+	_drainDisabled = false;
 }
 
 EventQueue::~EventQueue() {
 }
 
-void EventQueue::start(TrackEntry *entry) {
-	_eventQueueEntries.add(newEventQueueEntry(EventType_Start, entry));
+void EventQueue::start(TSharedRef<TrackEntry> entry)
+{
+	_eventQueueEntries.Add(EventQueueEntry(EventType_Start, entry));
+
 	_state._animationsChanged = true;
 }
 
-void EventQueue::interrupt(TrackEntry *entry) {
-	_eventQueueEntries.add(newEventQueueEntry(EventType_Interrupt, entry));
+void EventQueue::interrupt(TSharedRef<TrackEntry> entry)
+{
+	_eventQueueEntries.Add(EventQueueEntry(EventType_Interrupt, entry));
 }
 
-void EventQueue::end(TrackEntry *entry) {
-	_eventQueueEntries.add(newEventQueueEntry(EventType_End, entry));
+void EventQueue::end(TSharedRef<TrackEntry> entry)
+{
+	_eventQueueEntries.Add(EventQueueEntry(EventType_End, entry));
+
 	_state._animationsChanged = true;
 }
 
-void EventQueue::dispose(TrackEntry *entry) {
-	_eventQueueEntries.add(newEventQueueEntry(EventType_Dispose, entry));
+void EventQueue::dispose(TSharedRef<TrackEntry> entry)
+{
+	_eventQueueEntries.Add(EventQueueEntry(EventType_Dispose, entry));
 }
 
-void EventQueue::complete(TrackEntry *entry) {
-	_eventQueueEntries.add(newEventQueueEntry(EventType_Complete, entry));
+void EventQueue::complete(TSharedRef<TrackEntry> entry)
+{
+	_eventQueueEntries.Add(EventQueueEntry(EventType_Complete, entry));
+
 }
 
-void EventQueue::event(TrackEntry *entry, Event *event) {
-	_eventQueueEntries.add(newEventQueueEntry(EventType_Event, entry, event));
+void EventQueue::event(TSharedRef<TrackEntry> entry, Event *event)
+{
+	_eventQueueEntries.Add(EventQueueEntry(EventType_Event, entry, event));
 }
 
 /// Raises all events in the queue and drains the queue.
 void EventQueue::drain() {
-	if (_drainDisabled) {
+	if (_drainDisabled) 
+	{
 		return;
 	}
 
-	_drainDisabled = true;
+
+	TGuardValue<bool>  drainDisabledGuard(_drainDisabled, true);
 
 	AnimationState &state = _state;
 
 	// Don't cache _eventQueueEntries.size() so callbacks can queue their own events (eg, call setAnimation in AnimationState_Complete).
-	for (size_t i = 0; i < _eventQueueEntries.size(); ++i) {
-		EventQueueEntry *queueEntry = &_eventQueueEntries[i];
-		TrackEntry *trackEntry = queueEntry->_entry;
 
-		switch (queueEntry->_type) {
-			case EventType_Start:
-			case EventType_Interrupt:
-			case EventType_Complete:
-				if (!trackEntry->_listenerObject) trackEntry->_listener(&state, queueEntry->_type, trackEntry, NULL);
-				else trackEntry->_listenerObject->callback(&state, queueEntry->_type, trackEntry, NULL);
-				if(!state._listenerObject) state._listener(&state, queueEntry->_type, trackEntry, NULL);
-				else state._listenerObject->callback(&state, queueEntry->_type, trackEntry, NULL);
-				break;
-			case EventType_End:
-				if (!trackEntry->_listenerObject) trackEntry->_listener(&state, queueEntry->_type, trackEntry, NULL);
-				else trackEntry->_listenerObject->callback(&state, queueEntry->_type, trackEntry, NULL);
-				if (!state._listenerObject) state._listener(&state, queueEntry->_type, trackEntry, NULL);
-				else state._listenerObject->callback(&state, queueEntry->_type, trackEntry, NULL);
-				/* Yes, we want to fall through here */
-			case EventType_Dispose:
+	TArray<EventQueueEntry> UsedQueueEntries = MoveTemp(_eventQueueEntries);
 
-				if (!trackEntry->_listenerObject) trackEntry->_listener(&state, EventType_Dispose, trackEntry, NULL);
-				else trackEntry->_listenerObject->callback(&state, EventType_Dispose, trackEntry, NULL);
-				if (!state._listenerObject) state._listener(&state, EventType_Dispose, trackEntry, NULL);
-				else state._listenerObject->callback(&state, EventType_Dispose, trackEntry, NULL);
+	for (int32 i = 0; i < UsedQueueEntries.Num(); ++i)
+	{
+		EventQueueEntry &queueEntry = UsedQueueEntries[i];
 
-				trackEntry->reset();
-				_trackEntryPool.free(trackEntry);
-				break;
-			case EventType_Event:
-				if (!trackEntry->_listenerObject) trackEntry->_listener(&state, queueEntry->_type, trackEntry, queueEntry->_event);
-				else trackEntry->_listenerObject->callback(&state, queueEntry->_type, trackEntry, queueEntry->_event);
-				if (!state._listenerObject) state._listener(&state, queueEntry->_type, trackEntry, queueEntry->_event);
-				else state._listenerObject->callback(&state, queueEntry->_type, trackEntry, queueEntry->_event);
-				break;
+		TSharedRef<TrackEntry> trackEntry = queueEntry._entry;
+
+		auto Func_End = [&]
+		{
+			trackEntry->_listener.ExecuteIfBound(&state, queueEntry._type, trackEntry, queueEntry._event);
+			state._listener.ExecuteIfBound(&state, queueEntry._type, trackEntry, queueEntry._event);
+		};
+
+		auto Func_Dispose = [&]
+		{
+			trackEntry->_listener.ExecuteIfBound(&state, EventType_Dispose, trackEntry, queueEntry._event);
+			state._listener.ExecuteIfBound(&state, EventType_Dispose, trackEntry, queueEntry._event);
+			_state.getTracks().Remove(queueEntry._entry);
+		};
+
+		switch (queueEntry._type)
+		{
+		case EventType_Start:
+			trackEntry->_listener.ExecuteIfBound(&state, queueEntry._type, trackEntry, queueEntry._event);
+			state._listener.ExecuteIfBound(&state, queueEntry._type, trackEntry, queueEntry._event);
+			break;
+		case EventType_Interrupt:
+			trackEntry->_listener.ExecuteIfBound(&state, queueEntry._type, trackEntry, queueEntry._event);
+			state._listener.ExecuteIfBound(&state, queueEntry._type, trackEntry, queueEntry._event);
+
+			break;
+		case EventType_Complete:
+			trackEntry->_listener.ExecuteIfBound(&state, queueEntry._type, trackEntry, queueEntry._event);
+			state._listener.ExecuteIfBound(&state, queueEntry._type, trackEntry, queueEntry._event);
+
+			break;
+		case EventType_End:
+
+			Func_End();
+			Func_Dispose();
+			break;
+		case EventType_Dispose:
+			Func_Dispose();
+			break;
+		case EventType_Event:
+			trackEntry->_listener.ExecuteIfBound(&state, queueEntry._type, trackEntry, queueEntry._event);
+			state._listener.ExecuteIfBound(&state, queueEntry._type, trackEntry, queueEntry._event);
+			break;
+		default:
+			checkNoEntry();
 		}
 	}
-	_eventQueueEntries.clear();
+	//for (size_t i = 0; i < _eventQueueEntries.size(); ++i) {
+	//	EventQueueEntry *queueEntry = &_eventQueueEntries[i];
+	//	TrackEntry *trackEntry = queueEntry->_entry;
 
-	_drainDisabled = false;
+	//	switch (queueEntry->_type) {
+	//		case EventType_Start:
+	//		case EventType_Interrupt:
+	//		case EventType_Complete:
+	//			if (!trackEntry->_listenerObject) trackEntry->_listener(&state, queueEntry->_type, trackEntry, NULL);
+	//			else trackEntry->_listenerObject->callback(&state, queueEntry->_type, trackEntry, NULL);
+	//			if(!state._listenerObject) state._listener(&state, queueEntry->_type, trackEntry, NULL);
+	//			else state._listenerObject->callback(&state, queueEntry->_type, trackEntry, NULL);
+	//			break;
+	//		case EventType_End:
+	//			if (!trackEntry->_listenerObject) trackEntry->_listener(&state, queueEntry->_type, trackEntry, NULL);
+	//			else trackEntry->_listenerObject->callback(&state, queueEntry->_type, trackEntry, NULL);
+	//			if (!state._listenerObject) state._listener(&state, queueEntry->_type, trackEntry, NULL);
+	//			else state._listenerObject->callback(&state, queueEntry->_type, trackEntry, NULL);
+	//			/* Yes, we want to fall through here */
+	//		case EventType_Dispose:
+
+	//			if (!trackEntry->_listenerObject) trackEntry->_listener(&state, EventType_Dispose, trackEntry, NULL);
+	//			else trackEntry->_listenerObject->callback(&state, EventType_Dispose, trackEntry, NULL);
+	//			if (!state._listenerObject) state._listener(&state, EventType_Dispose, trackEntry, NULL);
+	//			else state._listenerObject->callback(&state, EventType_Dispose, trackEntry, NULL);
+
+	//			trackEntry->reset();
+	//			_trackEntryPool.free(trackEntry);
+	//			break;
+	//		case EventType_Event:
+	//			if (!trackEntry->_listenerObject) trackEntry->_listener(&state, queueEntry->_type, trackEntry, queueEntry->_event);
+	//			else trackEntry->_listenerObject->callback(&state, queueEntry->_type, trackEntry, queueEntry->_event);
+	//			if (!state._listenerObject) state._listener(&state, queueEntry->_type, trackEntry, queueEntry->_event);
+	//			else state._listenerObject->callback(&state, queueEntry->_type, trackEntry, queueEntry->_event);
+	//			break;
+	//	}
+	//	
+	//}
 }
 
-const int Subsequent = 0;
-const int First = 1;
-const int Hold = 2;
-const int HoldMix = 3;
-const int NotLast = 4;
 
-AnimationState::AnimationState(AnimationStateData *data) :
-		_data(data),
-		_queue(EventQueue::newEventQueue(*this, _trackEntryPool)),
+namespace spine
+{
+	const int Spine_Subsequent = 0;
+	const int Spine_First = 1;
+	const int Spine_Hold = 2;
+	const int Spine_HoldMix = 3;
+	const int Spine_NotLast = 4;
+}
+
+
+
+AnimationState::AnimationState(TSharedRef<class AnimationStateData> InAnimStateData) :
+		_data(InAnimStateData),
 		_animationsChanged(false),
-		_listener(dummyOnAnimationEventFunc),
-		_listenerObject(NULL),
-		_timeScale(1) {
+		_timeScale(1) 
+{
+			_queue = MakeShared<EventQueue>(*this);
 }
 
-AnimationState::~AnimationState() {
-	for (size_t i = 0; i < _tracks.size(); i++) {
-		TrackEntry* entry = _tracks[i];
-		if (entry) {
-			TrackEntry* from = entry->_mixingFrom;
-			while (from) {
-				TrackEntry* curr = from;
-				from = curr->_mixingFrom;
-				delete curr;
-			}
-			TrackEntry* next = entry->_next;
-			while (next) {
-				TrackEntry* curr = next;
-				next = curr->_next;
-				delete curr;
-			}
-			delete entry;
-		}
-	}
-	delete _queue;
+AnimationState::~AnimationState() 
+{
+	
 }
 
 void AnimationState::update(float delta) {
 	delta *= _timeScale;
-	for (size_t i = 0, n = _tracks.size(); i < n; ++i) {
-		TrackEntry *currentP = _tracks[i];
-		if (currentP == NULL) {
+	for (int32 i = 0, n = _tracks.Num(); i < n; ++i)
+	{
+		TSharedPtr<TrackEntry> currentP = _tracks[i];
+		if (!currentP.IsValid())
+		{
 			continue;
 		}
 
@@ -349,8 +395,9 @@ void AnimationState::update(float delta) {
 			current._delay = 0;
 		}
 
-		TrackEntry *next = current._next;
-		if (next != NULL) {
+		TSharedPtr<TrackEntry> next = current._next.Pin();
+		if (next.IsValid())
+		{
 			// When the next entry's delay is passed, change to the next entry, preserving leftover time.
 			float nextTime = current._trackLast - next->_delay;
 			if (nextTime >= 0) {
@@ -358,29 +405,37 @@ void AnimationState::update(float delta) {
 				next->_trackTime = current._timeScale == 0 ? 0 : (nextTime / current._timeScale + delta) * next->_timeScale;
 				current._trackTime += currentDelta;
 				setCurrent(i, next, true);
-				while (next->_mixingFrom != NULL) {
+				while (next->_mixingFrom != NULL) 
+				{
 					next->_mixTime += delta;
-					next = next->_mixingFrom;
+					next = next->_mixingFrom.Pin();
 				}
 				continue;
 			}
-		} else if (current._trackLast >= current._trackEnd && current._mixingFrom == NULL) {
+		} 
+		else if (current._trackLast >= current._trackEnd && current._mixingFrom == NULL) 
+		{
 			// clear the track when there is no next entry, the track end time is reached, and there is no mixingFrom.
-			_tracks[i] = NULL;
+			_tracks[i] = nullptr;
 
-			_queue->end(currentP);
-			disposeNext(currentP);
+			_queue->end(currentP->AsShared());
+			disposeNext(currentP->AsShared());
 			continue;
 		}
 
-		if (current._mixingFrom != NULL && updateMixingFrom(currentP, delta)) {
+		if (current._mixingFrom != NULL && updateMixingFrom(currentP, delta)) 
+		{
 			// End mixing from entries once all have completed.
-			TrackEntry *from = current._mixingFrom;
+			TSharedPtr<TrackEntry> from = current._mixingFrom.Pin();
 			current._mixingFrom = NULL;
-			if (from != NULL) from->_mixingTo = NULL;
-			while (from != NULL) {
-				_queue->end(from);
-				from = from->_mixingFrom;
+			if (from.IsValid())
+			{
+				from->_mixingTo = NULL;
+			}
+			while (from .IsValid())
+			{
+				_queue->end(from->AsShared());
+				from = from->_mixingFrom.Pin();
 			}
 		}
 
@@ -396,9 +451,12 @@ bool AnimationState::apply(Skeleton &skeleton) {
 	}
 
 	bool applied = false;
-	for (size_t i = 0, n = _tracks.size(); i < n; ++i) {
-		TrackEntry *currentP = _tracks[i];
-		if (currentP == NULL || currentP->_delay > 0) {
+	for (int32 i = 0, n = _tracks.Num(); i < n; ++i) 
+	{
+		TSharedPtr<TrackEntry> currentP = _tracks[i];
+
+		if (currentP .IsValid()==false || currentP->_delay > 0) 
+		{
 			continue;
 		}
 
@@ -417,30 +475,33 @@ bool AnimationState::apply(Skeleton &skeleton) {
 
 		// apply current entry.
 		float animationLast = current._animationLast, animationTime = current.getAnimationTime();
-		size_t timelineCount = current._animation->_timelines.size();
+		int32 timelineCount = current._animation->_timelines.size();
 		Vector<Timeline *> &timelines = current._animation->_timelines;
 		if ((i == 0 && mix == 1) || blend == MixBlend_Add) {
-			for (size_t ii = 0; ii < timelineCount; ++ii) {
+			for (int32 ii = 0; ii < timelineCount; ++ii) {
 				timelines[ii]->apply(skeleton, animationLast, animationTime, &_events, mix, blend,
 									 MixDirection_In);
 			}
 		} else {
-			Vector<int> &timelineMode = current._timelineMode;
+			TArray<int32> &timelineMode = current._timelineMode;
 
-			bool firstFrame = current._timelinesRotation.size() == 0;
-			if (firstFrame) {
-				current._timelinesRotation.setSize(timelines.size() << 1, 0);
+			bool firstFrame = current._timelinesRotation.Num() == 0;
+			if (firstFrame)
+			{
+				current._timelinesRotation.AddZeroed(timelines.size() << 1);
 			}
-			Vector<float> &timelinesRotation = current._timelinesRotation;
+			TArray<float> &timelinesRotation = current._timelinesRotation;
 
-			for (size_t ii = 0; ii < timelineCount; ++ii) {
+			for (int32 ii = 0; ii < timelineCount; ++ii) 
+			{
 				Timeline *timeline = timelines[ii];
-				assert(timeline);
+				check(timeline);
 
-				MixBlend timelineBlend = (timelineMode[ii] & (NotLast - 1)) == Subsequent ? blend : MixBlend_Setup;
+				MixBlend timelineBlend = (timelineMode[ii] & (Spine_NotLast - 1)) == Spine_Subsequent ? blend : MixBlend_Setup;
 
 				RotateTimeline *rotateTimeline = NULL;
-				if (timeline->getRTTI().isExactly(RotateTimeline::rtti)) {
+				if (timeline->getRTTI().isExactly(RotateTimeline::rtti))
+				{
 					rotateTimeline = static_cast<RotateTimeline *>(timeline);
 				}
 
@@ -466,36 +527,42 @@ bool AnimationState::apply(Skeleton &skeleton) {
 void AnimationState::clearTracks() {
 	bool oldDrainDisabled = _queue->_drainDisabled;
 	_queue->_drainDisabled = true;
-	for (size_t i = 0, n = _tracks.size(); i < n; ++i) {
+	for (int32 i = 0, n = _tracks.Num(); i < n; ++i)
+	{
 		clearTrack(i);
 	}
-	_tracks.clear();
+	_tracks.Empty();
 	_queue->_drainDisabled = oldDrainDisabled;
 	_queue->drain();
 }
 
-void AnimationState::clearTrack(size_t trackIndex) {
-	if (trackIndex >= _tracks.size()) {
+void AnimationState::clearTrack(int32 trackIndex) 
+{
+	if (trackIndex >= _tracks.Num())
+	{
 		return;
 	}
 
-	TrackEntry *current = _tracks[trackIndex];
-	if (current == NULL) {
+	TSharedPtr<TrackEntry> current = _tracks[trackIndex];
+	if (current.IsValid() == false)
+	{
 		return;
 	}
 
-	_queue->end(current);
+	_queue->end(current->AsShared());
 
-	disposeNext(current);
+	disposeNext(current->AsShared());
 
-	TrackEntry *entry = current;
-	while (true) {
-		TrackEntry *from = entry->_mixingFrom;
-		if (from == NULL) {
+	TSharedPtr<TrackEntry> entry = current;
+	while (true)
+	{
+		TSharedPtr<TrackEntry> from = entry->_mixingFrom.Pin();
+		if (from.IsValid() == false)
+		{
 			break;
 		}
 
-		_queue->end(from);
+		_queue->end(from->AsShared());
 		entry->_mixingFrom = NULL;
 		entry->_mixingTo = NULL;
 		entry = from;
@@ -506,59 +573,63 @@ void AnimationState::clearTrack(size_t trackIndex) {
 	_queue->drain();
 }
 
-TrackEntry *AnimationState::setAnimation(size_t trackIndex, const String &animationName, bool loop) {
-	Animation *animation = _data->_skeletonData->findAnimation(animationName);
-	assert(animation != NULL);
+TSharedPtr<TrackEntry> AnimationState::setAnimation(int32 trackIndex, const String &animationName, bool loop)
+{
+	TSharedPtr<Animation > animation = _data->_skeletonData->findAnimation(animationName);
+	assert(animation .IsValid());
 
-	return setAnimation(trackIndex, animation, loop);
+	return setAnimation(trackIndex, animation->AsShared(), loop);
 }
 
-TrackEntry *AnimationState::setAnimation(size_t trackIndex, Animation *animation, bool loop) {
-	assert(animation != NULL);
-
+TSharedPtr<TrackEntry> AnimationState::setAnimation(int32 trackIndex, TSharedRef<Animation> animation, bool loop)
+{
 	bool interrupt = true;
-	TrackEntry *current = expandToIndex(trackIndex);
-	if (current != NULL) {
-		if (current->_nextTrackLast == -1) {
+	TSharedPtr<TrackEntry> current = expandToIndex(trackIndex);
+	if (current.IsValid()) 
+	{
+		if (current->_nextTrackLast == -1) 
+		{
 			// Don't mix from an entry that was never applied.
-			_tracks[trackIndex] = current->_mixingFrom;
-			_queue->interrupt(current);
-			_queue->end(current);
-			disposeNext(current);
-			current = current->_mixingFrom;
+			_tracks[trackIndex] = current->_mixingFrom.Pin();
+			_queue->interrupt(current->AsShared());
+			_queue->end(current->AsShared());
+			disposeNext(current->AsShared());
+			current = current->_mixingFrom.Pin();
 			interrupt = false;
 		} else {
-			disposeNext(current);
+			disposeNext(current->AsShared());
 		}
 	}
 
-	TrackEntry *entry = newTrackEntry(trackIndex, animation, loop, current);
+	TSharedPtr<TrackEntry> entry = newTrackEntry(trackIndex, animation, loop, current);
 	setCurrent(trackIndex, entry, interrupt);
 	_queue->drain();
 
 	return entry;
 }
 
-TrackEntry *AnimationState::addAnimation(size_t trackIndex, const String &animationName, bool loop, float delay) {
-	Animation *animation = _data->_skeletonData->findAnimation(animationName);
-	assert(animation != NULL);
+TSharedPtr<TrackEntry> AnimationState::addAnimation(int32 trackIndex, const String &animationName, bool loop, float delay) {
+	TSharedPtr<Animation > animation = _data->_skeletonData->findAnimation(animationName);
+	check(animation.IsValid());
 
-	return addAnimation(trackIndex, animation, loop, delay);
+	return addAnimation(trackIndex, animation->AsShared(), loop, delay);
 }
 
-TrackEntry *AnimationState::addAnimation(size_t trackIndex, Animation *animation, bool loop, float delay) {
-	assert(animation != NULL);
+TSharedPtr<TrackEntry> AnimationState::addAnimation(int32 trackIndex, TSharedRef<Animation> animation, bool loop, float delay) {
 
-	TrackEntry *last = expandToIndex(trackIndex);
-	if (last != NULL) {
-		while (last->_next != NULL) {
-			last = last->_next;
+	TSharedPtr<TrackEntry> last = expandToIndex(trackIndex);
+	if (last .IsValid())
+	{
+		while (last->_next != NULL) 
+		{
+			last = last->_next.Pin();
 		}
 	}
 
-	TrackEntry *entry = newTrackEntry(trackIndex, animation, loop, last);
+	TSharedPtr<TrackEntry> entry = newTrackEntry(trackIndex, animation, loop, last);
 
-	if (last == NULL) {
+	if (last .IsValid()==false) 
+	{
 		setCurrent(trackIndex, entry, true);
 		_queue->drain();
 	} else {
@@ -571,7 +642,7 @@ TrackEntry *AnimationState::addAnimation(size_t trackIndex, Animation *animation
 				} else {
 					delay += MathUtil::max(duration, last->_trackTime);
 				}
-				delay -= _data->getMix(last->_animation, animation);
+				delay -= _data->getMix(last->_animation.Get(), &animation.Get());
 			} else {
 				delay = last->_trackTime;
 			}
@@ -582,19 +653,21 @@ TrackEntry *AnimationState::addAnimation(size_t trackIndex, Animation *animation
 	return entry;
 }
 
-TrackEntry *AnimationState::setEmptyAnimation(size_t trackIndex, float mixDuration) {
-	TrackEntry *entry = setAnimation(trackIndex, AnimationState::getEmptyAnimation(), false);
+TSharedPtr<TrackEntry> AnimationState::setEmptyAnimation(int32 trackIndex, float mixDuration) 
+{
+	TSharedPtr<TrackEntry> entry = setAnimation(trackIndex, AnimationState::getEmptyAnimation(), false);
 	entry->_mixDuration = mixDuration;
 	entry->_trackEnd = mixDuration;
 	return entry;
 }
 
-TrackEntry *AnimationState::addEmptyAnimation(size_t trackIndex, float mixDuration, float delay) {
-	if (delay <= 0) {
+TSharedPtr<TrackEntry> AnimationState::addEmptyAnimation(int32 trackIndex, float mixDuration, float delay) {
+	if (delay <= 0) 
+	{
 		delay -= mixDuration;
 	}
 
-	TrackEntry *entry = addAnimation(trackIndex, AnimationState::getEmptyAnimation(), false, delay);
+	TSharedPtr<TrackEntry> entry = addAnimation(trackIndex, AnimationState::getEmptyAnimation(), false, delay);
 	entry->_mixDuration = mixDuration;
 	entry->_trackEnd = mixDuration;
 	return entry;
@@ -603,9 +676,10 @@ TrackEntry *AnimationState::addEmptyAnimation(size_t trackIndex, float mixDurati
 void AnimationState::setEmptyAnimations(float mixDuration) {
 	bool oldDrainDisabled = _queue->_drainDisabled;
 	_queue->_drainDisabled = true;
-	for (size_t i = 0, n = _tracks.size(); i < n; ++i) {
-		TrackEntry *current = _tracks[i];
-		if (current != NULL) {
+	for (int32 i = 0, n = _tracks.Num(); i < n; ++i) {
+		TSharedPtr<TrackEntry> current = _tracks[i];
+		if (current .IsValid()) 
+		{
 			setEmptyAnimation(i, mixDuration);
 		}
 	}
@@ -613,15 +687,18 @@ void AnimationState::setEmptyAnimations(float mixDuration) {
 	_queue->drain();
 }
 
-TrackEntry *AnimationState::getCurrent(size_t trackIndex) {
-	return trackIndex >= _tracks.size() ? NULL : _tracks[trackIndex];
+TSharedPtr<TrackEntry> AnimationState::getCurrent(int32 trackIndex)
+{
+	return _tracks.IsValidIndex(trackIndex) ? _tracks[trackIndex] : nullptr;
 }
 
-AnimationStateData *AnimationState::getData() {
+TSharedRef<AnimationStateData> AnimationState::getData()
+{
 	return _data;
 }
 
-Vector<TrackEntry *> &AnimationState::getTracks() {
+TArray<TSharedPtr<TrackEntry>> &AnimationState::getTracks()
+{
 	return _tracks;
 }
 
@@ -633,15 +710,10 @@ void AnimationState::setTimeScale(float inValue) {
 	_timeScale = inValue;
 }
 
-void AnimationState::setListener(AnimationStateListener inValue) {
+void AnimationState::setListener(FSpineAnimationStateCallbackDelegate inValue) {
 	_listener = inValue;
-	_listenerObject = NULL;
 }
 
-void AnimationState::setListener(AnimationStateListenerObject* inValue) {
-	_listener = dummyOnAnimationEventFunc;
-	_listenerObject = inValue;
-}
 
 void AnimationState::disableQueue() {
 	_queue->_drainDisabled = true;
@@ -650,14 +722,15 @@ void AnimationState::enableQueue() {
 	_queue->_drainDisabled = false;
 }
 
-Animation *AnimationState::getEmptyAnimation() {
+TSharedRef<Animation> AnimationState::getEmptyAnimation()
+{
 	static Vector<Timeline *> timelines;
-	static Animation ret(String("<empty>"), timelines, 0);
-	return &ret;
+	static   TSharedRef<Animation> ret=MakeShared<Animation>(String("<empty>"), timelines, 0);
+	return ret;
 }
 
 void AnimationState::applyRotateTimeline(RotateTimeline *rotateTimeline, Skeleton &skeleton, float time, float alpha,
-										 MixBlend blend, Vector<float> &timelinesRotation, size_t i, bool firstFrame) {
+										 MixBlend blend, TArray<float> &timelinesRotation, int32 i, bool firstFrame) {
 	if (firstFrame) {
 		timelinesRotation[i] = 0;
 	}
@@ -738,9 +811,10 @@ void AnimationState::applyRotateTimeline(RotateTimeline *rotateTimeline, Skeleto
 	bone->_rotation = r1 - (16384 - (int) (16384.499999999996 - r1 / 360)) * 360;
 }
 
-bool AnimationState::updateMixingFrom(TrackEntry *to, float delta) {
-	TrackEntry *from = to->_mixingFrom;
-	if (from == NULL) {
+bool AnimationState::updateMixingFrom(TSharedPtr<TrackEntry> to, float delta) {
+	TSharedPtr<TrackEntry> from = to->_mixingFrom.Pin();
+	if (from.IsValid()==false) 
+	{
 		return true;
 	}
 
@@ -750,13 +824,18 @@ bool AnimationState::updateMixingFrom(TrackEntry *to, float delta) {
 	from->_trackLast = from->_nextTrackLast;
 
 	// Require mixTime > 0 to ensure the mixing from entry was applied at least once.
-	if (to->_mixTime > 0 && to->_mixTime >= to->_mixDuration) {
+	if (to->_mixTime > 0 && to->_mixTime >= to->_mixDuration)
+	{
 		// Require totalAlpha == 0 to ensure mixing is complete, unless mixDuration == 0 (the transition is a single frame).
-		if (from->_totalAlpha == 0 || to->_mixDuration == 0) {
+		if (from->_totalAlpha == 0 || to->_mixDuration == 0) 
+		{
 			to->_mixingFrom = from->_mixingFrom;
-			if (from->_mixingFrom != NULL) from->_mixingFrom->_mixingTo = to;
+			if (from->_mixingFrom != NULL)
+			{
+				from->_mixingFrom.Pin()->_mixingTo = to;
+			}
 			to->_interruptAlpha = from->_interruptAlpha;
-			_queue->end(from);
+			_queue->end(from->AsShared());
 		}
 		return finished;
 	}
@@ -767,9 +846,11 @@ bool AnimationState::updateMixingFrom(TrackEntry *to, float delta) {
 	return false;
 }
 
-float AnimationState::applyMixingFrom(TrackEntry *to, Skeleton &skeleton, MixBlend blend) {
-	TrackEntry *from = to->_mixingFrom;
-	if (from->_mixingFrom != NULL) {
+float AnimationState::applyMixingFrom(TSharedPtr<TrackEntry> to, Skeleton &skeleton, MixBlend blend) 
+{
+	TSharedPtr<TrackEntry> from = to->_mixingFrom.Pin();
+	if (from->_mixingFrom != NULL) 
+	{
 		applyMixingFrom(from, skeleton, blend);
 	}
 
@@ -790,61 +871,67 @@ float AnimationState::applyMixingFrom(TrackEntry *to, Skeleton &skeleton, MixBle
 	bool attachments = mix < from->_attachmentThreshold, drawOrder = mix < from->_drawOrderThreshold;
 	float animationLast = from->_animationLast, animationTime = from->getAnimationTime();
 	Vector<Timeline *> &timelines = from->_animation->_timelines;
-	size_t timelineCount = timelines.size();
+	int32 timelineCount = timelines.size();
 	float alphaHold = from->_alpha * to->_interruptAlpha, alphaMix = alphaHold * (1 - mix);
 
 	if (blend == MixBlend_Add) {
-		for (size_t i = 0; i < timelineCount; i++)
+		for (int32 i = 0; i < timelineCount; i++)
 			timelines[i]->apply(skeleton, animationLast, animationTime, eventBuffer, alphaMix, blend, MixDirection_Out);
-	} else {
-		Vector<int> &timelineMode = from->_timelineMode;
-		Vector<TrackEntry *> &timelineHoldMix = from->_timelineHoldMix;
+	}
+	else 
+	{
+		TArray<int32> &timelineMode = from->_timelineMode;
+		TArray<TSharedPtr<TrackEntry>> &timelineHoldMix = from->_timelineHoldMix;
 
-		bool firstFrame = from->_timelinesRotation.size() == 0;
-		if (firstFrame) {
-			from->_timelinesRotation.setSize(timelines.size() << 1, 0);
+		bool firstFrame = from->_timelinesRotation.Num() == 0;
+		if (firstFrame) 
+		{
+			from->_timelinesRotation.Empty();
+			from->_timelinesRotation.AddZeroed(timelines.size() << 1);
 		}
 
-		Vector<float> &timelinesRotation = from->_timelinesRotation;
+		TArray<float>  &timelinesRotation = from->_timelinesRotation;
 
 		from->_totalAlpha = 0;
-		for (size_t i = 0; i < timelineCount; i++) {
+		for (int32 i = 0; i < timelineCount; i++)
+		{
 			Timeline *timeline = timelines[i];
 			MixDirection direction = MixDirection_Out;
 			MixBlend timelineBlend;
 			float alpha;
-			switch (timelineMode[i] & (NotLast - 1)) {
-				case Subsequent:
+			switch (timelineMode[i] & (Spine_NotLast - 1)) {
+				case Spine_Subsequent:
 					if (!attachments && (timeline->getRTTI().isExactly(AttachmentTimeline::rtti))) {
-						if ((timelineMode[i] & NotLast) == NotLast) continue;
+						if ((timelineMode[i] & Spine_NotLast) == Spine_NotLast) continue;
 						blend = MixBlend_Setup;
 					}
 					if (!drawOrder && (timeline->getRTTI().isExactly(DrawOrderTimeline::rtti))) continue;
 					timelineBlend = blend;
 					alpha = alphaMix;
 					break;
-				case First:
+				case Spine_First:
 					timelineBlend = MixBlend_Setup;
 					alpha = alphaMix;
 					break;
-				case Hold:
+				case Spine_Hold:
 					timelineBlend = MixBlend_Setup;
 					alpha = alphaHold;
 					break;
 				default:
 					timelineBlend = MixBlend_Setup;
-					TrackEntry *holdMix = timelineHoldMix[i];
+					TSharedPtr<TrackEntry> holdMix = timelineHoldMix[i];
 					alpha = alphaHold * MathUtil::max(0.0f, 1.0f - holdMix->_mixTime / holdMix->_mixDuration);
 					break;
 			}
 			from->_totalAlpha += alpha;
-			if ((timeline->getRTTI().isExactly(RotateTimeline::rtti))) {
+			if ((timeline->getRTTI().isExactly(RotateTimeline::rtti)))
+			{
 				applyRotateTimeline((RotateTimeline*)timeline, skeleton, animationTime, alpha, timelineBlend, timelinesRotation, i << 1,
 									firstFrame);
 			} else {
 				if (timelineBlend == MixBlend_Setup) {
 					if (timeline->getRTTI().isExactly(AttachmentTimeline::rtti)) {
-						if (attachments || (timelineMode[i] & NotLast) == NotLast) direction = MixDirection_In;
+						if (attachments || (timelineMode[i] & Spine_NotLast) == Spine_NotLast) direction = MixDirection_In;
 					} else if (timeline->getRTTI().isExactly(DrawOrderTimeline::rtti)) {
 						if (drawOrder) direction = MixDirection_In;
 					}
@@ -866,13 +953,14 @@ float AnimationState::applyMixingFrom(TrackEntry *to, Skeleton &skeleton, MixBle
 	return mix;
 }
 
-void AnimationState::queueEvents(TrackEntry *entry, float animationTime) {
+void AnimationState::queueEvents(TSharedPtr<TrackEntry> entry, float animationTime)
+{
 	float animationStart = entry->_animationStart, animationEnd = entry->_animationEnd;
 	float duration = animationEnd - animationStart;
 	float trackLastWrapped = MathUtil::fmod(entry->_trackLast, duration);
 
 	// Queue events before complete.
-	size_t i = 0, n = _events.size();
+	int32 i = 0, n = _events.size();
 	for (; i < n; ++i) {
 		Event *e = _events[i];
 		if (e->_time < trackLastWrapped) {
@@ -882,7 +970,7 @@ void AnimationState::queueEvents(TrackEntry *entry, float animationTime) {
 			// Discard events outside animation start/end.
 			continue;
 		}
-		_queue->event(entry, e);
+		_queue->event(entry->AsShared(), e);
 	}
 
 	// Queue complete if completed a loop iteration or the animation.
@@ -891,7 +979,7 @@ void AnimationState::queueEvents(TrackEntry *entry, float animationTime) {
 		complete = duration == 0 || (trackLastWrapped > MathUtil::fmod(entry->_trackTime, duration));
 	else
 		complete = animationTime >= animationEnd && entry->_animationLast < animationEnd;
-	if (complete) _queue->complete(entry);
+	if (complete) _queue->complete(entry->AsShared());
 
 	// Queue events after complete.
 	for (; i < n; ++i) {
@@ -900,17 +988,20 @@ void AnimationState::queueEvents(TrackEntry *entry, float animationTime) {
 			// Discard events outside animation start/end.
 			continue;
 		}
-		_queue->event(entry, _events[i]);
+		_queue->event(entry->AsShared(), _events[i]);
 	}
 }
 
-void AnimationState::setCurrent(size_t index, TrackEntry *current, bool interrupt) {
-	TrackEntry *from = expandToIndex(index);
+void AnimationState::setCurrent(int32 index, TSharedPtr<TrackEntry> current, bool interrupt)
+{
+	TSharedPtr<TrackEntry> from = expandToIndex(index);
 	_tracks[index] = current;
 
-	if (from != NULL) {
-		if (interrupt) {
-			_queue->interrupt(from);
+	if (from.IsValid())
+	{
+		if (interrupt)
+		{
+			_queue->interrupt(from->AsShared());
 		}
 
 		current->_mixingFrom = from;
@@ -918,31 +1009,37 @@ void AnimationState::setCurrent(size_t index, TrackEntry *current, bool interrup
 		current->_mixTime = 0;
 
 		// Store interrupted mix percentage.
-		if (from->_mixingFrom != NULL && from->_mixDuration > 0) {
+		if (from->_mixingFrom != NULL && from->_mixDuration > 0)
+		{
 			current->_interruptAlpha *= MathUtil::min(1.0f, from->_mixTime / from->_mixDuration);
 		}
 
-		from->_timelinesRotation.clear(); // Reset rotation for mixing out, in case entry was mixed in.
+		from->_timelinesRotation.Empty(); // Reset rotation for mixing out, in case entry was mixed in.
 	}
 
-	_queue->start(current); // triggers animationsChanged
+	_queue->start(current->AsShared()); // triggers animationsChanged
 }
 
-TrackEntry *AnimationState::expandToIndex(size_t index) {
-	if (index < _tracks.size()) {
+TSharedPtr<TrackEntry> AnimationState::expandToIndex(int32 index)
+{
+	if (index < _tracks.Num())
+	{
 		return _tracks[index];
 	}
 
-	while (index >= _tracks.size()) {
-		_tracks.add(NULL);
+	while (index >= _tracks.Num())
+	{
+		_tracks.AddDefaulted();
 	}
 
-	return NULL;
+	return nullptr;
 }
 
-TrackEntry *AnimationState::newTrackEntry(size_t trackIndex, Animation *animation, bool loop, TrackEntry *last) {
-	TrackEntry *entryP = _trackEntryPool.obtain(); // Pooling
-	TrackEntry &entry = *entryP;
+TSharedRef<spine::TrackEntry> AnimationState::newTrackEntry(int32 trackIndex, TSharedRef<Animation> animation, bool loop, TSharedPtr<TrackEntry> last)
+{
+	TSharedRef<spine::TrackEntry> Result = MakeShared<TrackEntry>();
+
+	TrackEntry &entry = *Result;
 
 	entry._trackIndex = trackIndex;
 	entry._animation = animation;
@@ -962,24 +1059,28 @@ TrackEntry *AnimationState::newTrackEntry(size_t trackIndex, Animation *animatio
 	entry._trackTime = 0;
 	entry._trackLast = -1;
 	entry._nextTrackLast = -1; // nextTrackLast == -1 signifies a TrackEntry that wasn't applied yet.
-	entry._trackEnd = std::numeric_limits<float>::max(); // loop ? float.MaxValue : animation.Duration;
+	entry._trackEnd = BIG_NUMBER; // loop ? float.MaxValue : animation.Duration;
 	entry._timeScale = 1;
 
 	entry._alpha = 1;
 	entry._interruptAlpha = 1;
 	entry._mixTime = 0;
-	entry._mixDuration = (last == NULL) ? 0 : _data->getMix(last->_animation, animation);
+	entry._mixDuration = last.IsValid() ? _data->getMix(last->_animation.Get(), &animation.Get()) : 0;
 
-	return entryP;
+	return Result;
 }
 
-void AnimationState::disposeNext(TrackEntry *entry) {
-	TrackEntry *next = entry->_next;
-	while (next != NULL) {
-		_queue->dispose(next);
-		next = next->_next;
+
+
+void AnimationState::disposeNext(TSharedRef<TrackEntry> entry) 
+{
+	auto next = entry->_next.Pin();
+	entry->_next = nullptr;
+	while (next.IsValid()) 
+	{
+		_queue->dispose(next->AsShared());
+		next = next->_next.Pin();
 	}
-	entry->_next = NULL;
 }
 
 void AnimationState::animationsChanged() {
@@ -987,84 +1088,98 @@ void AnimationState::animationsChanged() {
 
 	_propertyIDs.clear();
 
-	for (size_t i = 0, n = _tracks.size(); i < n; ++i) {
-		TrackEntry *entry = _tracks[i];
+	for (int32 i = 0, n = _tracks.Num(); i < n; ++i) {
+		TSharedPtr<TrackEntry> entry = _tracks[i];
 
-		if (!entry) continue;
+		if (!entry.IsValid())
+		{
+			continue;
+		}
 
 		while (entry->_mixingFrom != NULL)
-			entry = entry->_mixingFrom;
+		{
+			entry = entry->_mixingFrom.Pin();
+		}
 
-		do {
-			if (entry->_mixingTo == NULL || entry->_mixBlend != MixBlend_Add) computeHold(entry);
-			entry = entry->_mixingTo;
-		} while (entry != NULL);
+		do
+		{
+			if (entry->_mixingTo == NULL || entry->_mixBlend != MixBlend_Add)
+			{
+				computeHold(entry);
+			}
+			entry = entry->_mixingTo.Pin();
+		} while (entry.IsValid());
 	}
 
 	_propertyIDs.clear();
-	for (int i = (int)_tracks.size() - 1; i >= 0; i--) {
-		TrackEntry *entry = _tracks[i];
+	for (int i = (int)_tracks.Num() - 1; i >= 0; i--) {
+		TSharedPtr<TrackEntry> entry = _tracks[i];
 		while (entry) {
 			computeNotLast(entry);
-			entry = entry->_mixingFrom;
+			entry = entry->_mixingFrom.Pin();
 		}
 	}
 }
 
-void AnimationState::computeHold(TrackEntry *entry) {
-	TrackEntry* to = entry->_mixingTo;
+void AnimationState::computeHold(TSharedPtr<TrackEntry> entry) {
+	TSharedPtr<TrackEntry> to = entry->_mixingTo.Pin();
 	Vector<Timeline *> &timelines = entry->_animation->_timelines;
-	size_t timelinesCount = timelines.size();
-	Vector<int> &timelineMode = entry->_timelineMode;
-	timelineMode.setSize(timelinesCount, 0);
-	Vector<TrackEntry *> &timelineHoldMix = entry->_timelineHoldMix;
-	timelineHoldMix.setSize(timelinesCount, 0);
+	int32 timelinesCount = timelines.size();
+	TArray<int32> &timelineMode = entry->_timelineMode;
+	
+	timelineMode.Empty(timelinesCount);
+	timelineMode.AddZeroed(timelinesCount);
+	TArray<TSharedPtr<TrackEntry>> &timelineHoldMix = entry->_timelineHoldMix;
+	timelineHoldMix.Empty(timelinesCount);
+	timelineHoldMix.AddDefaulted(timelinesCount);
 
-	if (to != NULL && to->_holdPrevious) {
-		for (size_t i = 0; i < timelinesCount; i++) {
+	if (to.IsValid() && to->_holdPrevious)
+	{
+		for (int32 i = 0; i < timelinesCount; i++) 
+		{
 			int id = timelines[i]->getPropertyId();
 			if (!_propertyIDs.contains(id)) _propertyIDs.add(id);
-			timelineMode[i] = Hold;
+			timelineMode[i] = Spine_Hold;
 		}
 		return;
 	}
 
 	// outer:
-	size_t i = 0;
+	int32 i = 0;
 	continue_outer:
 	for (; i < timelinesCount; ++i) {
 		Timeline *timeline = timelines[i];
 		int id = timeline->getPropertyId();
 		if (_propertyIDs.contains(id)) {
-			timelineMode[i] = Subsequent;
+			timelineMode[i] = Spine_Subsequent;
 		} else {
 			_propertyIDs.add(id);
 
-			if (to == NULL || timeline->getRTTI().isExactly(AttachmentTimeline::rtti) ||
+			if (!to.IsValid() || timeline->getRTTI().isExactly(AttachmentTimeline::rtti) ||
 					timeline->getRTTI().isExactly(DrawOrderTimeline::rtti) ||
 					timeline->getRTTI().isExactly(EventTimeline::rtti) || !hasTimeline(to, id)) {
-				timelineMode[i] = First;
+				timelineMode[i] = Spine_First;
 			} else {
-				for (TrackEntry *next = to->_mixingTo; next != NULL; next = next->_mixingTo) {
-					if (hasTimeline(next, id)) continue;
+				for (TWeakPtr<TrackEntry> next = to->_mixingTo; next.IsValid(); next = next.Pin() ->_mixingTo) {
+					if (hasTimeline(next.Pin(), id)) continue;
 					if (entry->_mixDuration > 0) {
-						timelineMode[i] = HoldMix;
+						timelineMode[i] = Spine_HoldMix;
 						timelineHoldMix[i] = entry;
 						i++;
 						goto continue_outer; // continue outer;
 					}
 					break;
 				}
-				timelineMode[i] = Hold;
+				timelineMode[i] = Spine_Hold;
 			}
 		}
 	}
 }
 
-void AnimationState::computeNotLast(TrackEntry *entry) {
+void AnimationState::computeNotLast(TSharedPtr<TrackEntry> entry) {
 	Vector<Timeline *> &timelines = entry->_animation->_timelines;
 	size_t timelinesCount = timelines.size();
-	Vector<int> &timelineMode = entry->_timelineMode;
+	TArray<int32> &timelineMode = entry->_timelineMode;
 
 	for (size_t i = 0; i < timelinesCount; i++) {
 		if (timelines[i]->getRTTI().isExactly(AttachmentTimeline::rtti)) {
@@ -1072,15 +1187,15 @@ void AnimationState::computeNotLast(TrackEntry *entry) {
 			if (!_propertyIDs.contains(timeline->getSlotIndex())) {
 				_propertyIDs.add(timeline->getSlotIndex());
 			} else {
-				timelineMode[i] |= NotLast;
+				timelineMode[i] |= Spine_NotLast;
 			}
 		}
 	}
 }
 
-bool AnimationState::hasTimeline(TrackEntry* entry, int inId) {
+bool AnimationState::hasTimeline(TSharedPtr<TrackEntry> entry, int inId) {
 	Vector<Timeline *> &timelines = entry->_animation->_timelines;
-	for (size_t i = 0, n = timelines.size(); i < n; ++i) {
+	for (int32 i = 0, n = timelines.size(); i < n; ++i) {
 		if (timelines[i]->getPropertyId() == inId) {
 			return true;
 		}

@@ -1,35 +1,34 @@
-/******************************************************************************
- * Spine Runtimes License Agreement
- * Last updated May 1, 2019. Replaces all prior versions.
+﻿/******************************************************************************
+ * Spine Runtimes Software License v2.5
  *
- * Copyright (c) 2013-2019, Esoteric Software LLC
+ * Copyright (c) 2013-2016, Esoteric Software
+ * All rights reserved.
  *
- * Integration of the Spine Runtimes into software or otherwise creating
- * derivative works of the Spine Runtimes is permitted under the terms and
- * conditions of Section 2 of the Spine Editor License Agreement:
- * http://esotericsoftware.com/spine-editor-license
+ * You are granted a perpetual, non-exclusive, non-sublicensable, and
+ * non-transferable license to use, install, execute, and perform the Spine
+ * Runtimes software and derivative works solely for personal or internal
+ * use. Without the written permission of Esoteric Software (see Section 2 of
+ * the Spine Software License Agreement), you may not (a) modify, translate,
+ * adapt, or develop new applications using the Spine Runtimes or otherwise
+ * create derivative works or improvements of the Spine Runtimes or (b) remove,
+ * delete, alter, or obscure any trademarks or any copyright, trademark, patent,
+ * or other intellectual property or proprietary rights notices on or in the
+ * Software, including any copy thereof. Redistributions in binary or source
+ * form must include this license and terms.
  *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
- * "Products"), provided that each user of the Products must obtain their own
- * Spine Editor license and redistribution of the Products in any form must
- * include this license and copyright notice.
- *
- * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE LLC "AS IS" AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
- * NO EVENT SHALL ESOTERIC SOFTWARE LLC BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS
- * INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ESOTERIC SOFTWARE BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS INTERRUPTION, OR LOSS OF
+ * USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+ * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 
-#ifdef SPINE_UE4
-#include "SpinePluginPrivatePCH.h"
-#endif
+
 
 #include <spine/Atlas.h>
 #include <spine/TextureLoader.h>
@@ -69,38 +68,33 @@ Atlas::Atlas(const char *data, int length, const char *dir, TextureLoader *textu
 	load(data, length, dir, createTexture);
 }
 
-Atlas::~Atlas() {
-	if (_textureLoader) {
-		for (size_t i = 0, n = _pages.size(); i < n; ++i) {
-			_textureLoader->unload(_pages[i]->getRendererObject());
+Atlas::~Atlas()
+{
+	if (_textureLoader.IsValid()) 
+	{
+		for ( AtlasPage& Page: _pages)
+		{
+			_textureLoader->unload(Page.GetRendererObject().Get());
 		}
 	}
-	ContainerUtil::cleanUpVectorOfPointers(_pages);
-	ContainerUtil::cleanUpVectorOfPointers(_regions);
+	
 }
 
-void Atlas::flipV() {
-	for (size_t i = 0, n = _regions.size(); i < n; ++i) {
-		AtlasRegion *regionP = _regions[i];
-		AtlasRegion &region = *regionP;
-		region.v = 1 - region.v;
-		region.v2 = 1 - region.v2;
+void Atlas::flipV() 
+{
+	for (TSharedPtr<AtlasRegion> region : _regions)
+	{
+		region->v = 1 - region->v;
+		region->v2 = 1 - region->v2;
 	}
 }
 
-AtlasRegion *Atlas::findRegion(const String &name) {
-	for (size_t i = 0, n = _regions.size(); i < n; ++i) {
-		if (_regions[i]->name == name) {
-			return _regions[i];
-		}
-	}
-
-	return NULL;
+TSharedPtr<AtlasRegion> Atlas::findRegion(const FString &name)
+{
+	return findRegionInSpecificPage(name, TEXT(""));
 }
 
-Vector<AtlasPage*> &Atlas::getPages() {
-	return _pages;
-}
+
 
 void Atlas::load(const char *begin, int length, const char *dir, bool createTexture) {
 	static const char *formatNames[] = {"", "Alpha", "Intensity", "LuminanceAlpha", "RGB565", "RGBA4444", "RGB888",
@@ -114,14 +108,19 @@ void Atlas::load(const char *begin, int length, const char *dir, bool createText
 	int dirLength = (int) strlen(dir);
 	int needsSlash = dirLength > 0 && dir[dirLength - 1] != '/' && dir[dirLength - 1] != '\\';
 
-	AtlasPage *page = NULL;
+
+	TOptional<AtlasPage> page;
 	Str str;
 	Str tuple[4];
 
-	while (readLine(&begin, end, &str)) {
-		if (str.end - str.begin == 0) {
-			page = 0;
-		} else if (!page) {
+	while (readLine(&begin, end, &str)) 
+	{
+		if (str.end - str.begin == 0) 
+		{
+			page.Reset();
+		} 
+		else if (!page) 
+		{
 			char *name = mallocString(&str);
 			char *path = SpineExtension::calloc<char>(dirLength + needsSlash + strlen(name) + 1, __FILE__, __LINE__);
 			memcpy(path, dir, dirLength);
@@ -130,7 +129,10 @@ void Atlas::load(const char *begin, int length, const char *dir, bool createText
 			}
 			strcpy(path + dirLength + needsSlash, name);
 
-			page = new(__FILE__, __LINE__) AtlasPage(String(name, true));
+			String NameString(name, true);
+			String PathString(path, true);
+			
+			page = AtlasPage(NameString.buffer());
 
 			int tupleVal = readTuple(&begin, end, tuple);
 			assert(tupleVal == 2);
@@ -140,11 +142,11 @@ void Atlas::load(const char *begin, int length, const char *dir, bool createText
 			page->height = toInt(tuple + 1);
 			readTuple(&begin, end, tuple);
 
-			page->format = (Format) indexOf(formatNames, 8, tuple);
+			page->format = (SpineFormat) indexOf(formatNames, 8, tuple);
 
 			readTuple(&begin, end, tuple);
-			page->minFilter = (TextureFilter) indexOf(textureFilterNames, 8, tuple);
-			page->magFilter = (TextureFilter) indexOf(textureFilterNames, 8, tuple + 1);
+			page->minFilter = (SpineTextureFilter) indexOf(textureFilterNames, 8, tuple);
+			page->magFilter = (SpineTextureFilter) indexOf(textureFilterNames, 8, tuple + 1);
 
 			readValue(&begin, end, &str);
 
@@ -165,20 +167,25 @@ void Atlas::load(const char *begin, int length, const char *dir, bool createText
 
 			if (createTexture)
 			{
-				if (_textureLoader) _textureLoader->load(*page, String(path));
-				SpineExtension::free(path, __FILE__, __LINE__);
+				if (_textureLoader)
+				{
+					_textureLoader->load(page.GetValue(), PathString);
+				}
 			}
 			else
 			{
-				page->texturePath = String(path, true);
+			//	page->texturePath =PathString;
 			}
 
-			_pages.add(page);
-		} else {
-			AtlasRegion *region = new(__FILE__, __LINE__) AtlasRegion();
+			_pages.Add(page.GetValue());
+		} else 
+		{
+			TSharedPtr<AtlasRegion> region = MakeShared<AtlasRegion>();
+			region->Page = page.GetValue();
 
-			region->page = page;
-			region->name = String(mallocString(&str), true);
+			spine::String TempString(mallocString(&str), true);
+
+			region->RegionName = TempString.buffer();
 
 			readValue(&begin, end, &str);
 			if (equals(&str, "true")) {
@@ -213,7 +220,7 @@ void Atlas::load(const char *begin, int length, const char *dir, bool createText
 
 			if (count == 4) {
 				/* split is optional */
-				region->splits.setSize(4, 0);
+				region->splits.SetNum(4, 0);
 				region->splits[0] = toInt(tuple);
 				region->splits[1] = toInt(tuple + 1);
 				region->splits[2] = toInt(tuple + 2);
@@ -224,7 +231,7 @@ void Atlas::load(const char *begin, int length, const char *dir, bool createText
 
 				if (count == 4) {
 					/* pad is optional, but only present with splits */
-					region->pads.setSize(4, 0);
+					region->pads.SetNum(4, 0);
 					region->pads[0] = toInt(tuple);
 					region->pads[1] = toInt(tuple + 1);
 					region->pads[2] = toInt(tuple + 2);
@@ -245,7 +252,7 @@ void Atlas::load(const char *begin, int length, const char *dir, bool createText
 
 			region->index = toInt(&str);
 
-			_regions.add(region);
+			_regions.Add(region);
 		}
 	}
 }
@@ -366,4 +373,31 @@ int Atlas::equals(Str *str, const char *other) {
 
 int Atlas::toInt(Str *str) {
 	return (int) strtol(str->begin, (char **) &str->end, 10);
+}
+
+TSharedPtr<spine::AtlasRegion> spine::Atlas::findRegionInSpecificPage(const FString &RegionName, const FString & PageName)
+{
+	auto FoundPtr = _regions.FindByPredicate([&RegionName, &PageName](TSharedPtr<AtlasRegion> TestRegion)
+	{
+		if (PageName.IsEmpty())
+		{
+			return TestRegion->RegionName == RegionName;
+		}
+		else
+		{
+			return TestRegion->RegionName == RegionName && TestRegion->Page.name == PageName;
+		}
+	});
+
+	return FoundPtr ? *FoundPtr : nullptr;
+}
+
+bool spine::operator==(const AtlasPage & lhs, const AtlasPage & rhs)
+{
+	if (lhs.name != rhs.name)
+	{
+		return false;
+	}
+	
+	return true;
 }

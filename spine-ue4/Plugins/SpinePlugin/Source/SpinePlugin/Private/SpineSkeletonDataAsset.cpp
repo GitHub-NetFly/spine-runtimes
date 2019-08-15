@@ -1,140 +1,35 @@
-/******************************************************************************
- * Spine Runtimes License Agreement
- * Last updated May 1, 2019. Replaces all prior versions.
- *
- * Copyright (c) 2013-2019, Esoteric Software LLC
- *
- * Integration of the Spine Runtimes into software or otherwise creating
- * derivative works of the Spine Runtimes is permitted under the terms and
- * conditions of Section 2 of the Spine Editor License Agreement:
- * http://esotericsoftware.com/spine-editor-license
- *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
- * "Products"), provided that each user of the Products must obtain their own
- * Spine Editor license and redistribution of the Products in any form must
- * include this license and copyright notice.
- *
- * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE LLC "AS IS" AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
- * NO EVENT SHALL ESOTERIC SOFTWARE LLC BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS
- * INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *****************************************************************************/
+﻿
 
-#include "SpinePluginPrivatePCH.h"
+#include "SpineSkeletonDataAsset.h"
 #include "spine/spine.h"
 #include <string.h>
 #include <string>
 #include <stdlib.h>
 #include "Runtime/Core/Public/Misc/MessageDialog.h"
 
+#include "UObject/DevObjectVersion.h"
+#include "EditorFramework/AssetImportData.h"
+
+
+#include "SpinePlugin.h"
+
+#include"SpineAtlasAsset.h"
+
+#if WITH_EDITOR
+#include "Factories/Factory.h"
+#include "Editor.h"
+#endif
+
 #define LOCTEXT_NAMESPACE "Spine"
+
+
+const FGuid FSpineSkeletonDataAssetObjectVersion::GUID(0xc6e154d2, 0x17c2fbab, 0xf7800b72, 0xa1e2f5f4);
+
+FDevVersionRegistration GRegisterSpineObjectVersion(FSpineSkeletonDataAssetObjectVersion::GUID,
+	FSpineSkeletonDataAssetObjectVersion::LatestVersion, TEXT("Dev-SpineSkeletonDataAsset"));
 
 using namespace spine;
 
-FName USpineSkeletonDataAsset::GetSkeletonDataFileName () const {
-#if WITH_EDITORONLY_DATA
-	TArray<FString> files;
-	if (importData) importData->ExtractFilenames(files);
-	if (files.Num() > 0) return FName(*files[0]);
-	else return skeletonDataFileName;
-#else
-	return skeletonDataFileName;
-#endif
-}
-
-#if WITH_EDITORONLY_DATA
-
-void USpineSkeletonDataAsset::SetSkeletonDataFileName (const FName &SkeletonDataFileName) {
-	importData->UpdateFilenameOnly(SkeletonDataFileName.ToString());
-	TArray<FString> files;
-	importData->ExtractFilenames(files);
-	if (files.Num() > 0) this->skeletonDataFileName = FName(*files[0]);
-}
-
-void USpineSkeletonDataAsset::PostInitProperties () {
-	if (!HasAnyFlags(RF_ClassDefaultObject)) importData = NewObject<UAssetImportData>(this, TEXT("AssetImportData"));
-	Super::PostInitProperties();
-}
-
-void USpineSkeletonDataAsset::GetAssetRegistryTags (TArray<FAssetRegistryTag>& OutTags) const {
-	if (importData) {
-		OutTags.Add(FAssetRegistryTag(SourceFileTagName(), importData->GetSourceData().ToJson(), FAssetRegistryTag::TT_Hidden) );
-	}
-	
-	Super::GetAssetRegistryTags(OutTags);
-}
-
-void USpineSkeletonDataAsset::Serialize (FArchive& Ar) {
-	Super::Serialize(Ar);
-	if (Ar.IsLoading() && Ar.UE4Ver() < VER_UE4_ASSET_IMPORT_DATA_AS_JSON && !importData)
-		importData = NewObject<UAssetImportData>(this, TEXT("AssetImportData"));
-	LoadInfo();
-}
-
-#endif
-
-void USpineSkeletonDataAsset::BeginDestroy () {
-	if (this->skeletonData) {
-		delete this->skeletonData;
-		this->skeletonData = nullptr;
-	}
-	if (this->animationStateData) {
-		delete this->animationStateData;
-		this->animationStateData = nullptr;
-	}
-	Super::BeginDestroy();
-}
-
-class SP_API NullAttachmentLoader : public AttachmentLoader {
-public:
-
-	virtual RegionAttachment* newRegionAttachment(Skin& skin, const String& name, const String& path) {
-		return new(__FILE__, __LINE__) RegionAttachment(name);
-	}
-
-	virtual MeshAttachment* newMeshAttachment(Skin& skin, const String& name, const String& path) {
-		return new(__FILE__, __LINE__) MeshAttachment(name);
-	}
-
-	virtual BoundingBoxAttachment* newBoundingBoxAttachment(Skin& skin, const String& name) {
-		return new(__FILE__, __LINE__) BoundingBoxAttachment(name);
-	}
-
-	virtual PathAttachment* newPathAttachment(Skin& skin, const String& name) {
-		return new(__FILE__, __LINE__) PathAttachment(name);
-	}
-
-	virtual PointAttachment* newPointAttachment(Skin& skin, const String& name) {
-		return new(__FILE__, __LINE__) PointAttachment(name);
-	}
-
-	virtual ClippingAttachment* newClippingAttachment(Skin& skin, const String& name) {
-		return new(__FILE__, __LINE__) ClippingAttachment(name);
-	}
-
-	virtual void configureAttachment(Attachment* attachment) {
-
-	}
-};
-
-void USpineSkeletonDataAsset::SetRawData(TArray<uint8> &Data) {
-	this->rawData.Empty();
-	this->rawData.Append(Data);
-
-	if (skeletonData) {
-		delete skeletonData;
-		skeletonData = nullptr;
-	}
-
-	LoadInfo();
-}
 
 static bool checkVersion(const char* version) {
 	String tokens[3];
@@ -227,121 +122,408 @@ static bool checkBinary(const char* binaryData, int length) {
 	return result;
 }
 
-void USpineSkeletonDataAsset::LoadInfo() {
+
+#if WITH_EDITOR
+
+void USpineSkeletonDataAsset::SetRawData(TArray<uint8> &Data)
+{
+	this->rawData.Empty();
+	this->rawData.Append(Data);
+
+	LoadInfo();
+
+	CachedSkeletonData = BuildSkeletonData();
+
+	//	MarkPackageDirty();
+}
+
+void USpineSkeletonDataAsset::BindEngineCallback()
+{
+	check(GEditor);
+
+	GEditor->GetEditorSubsystem<UImportSubsystem>()->OnAssetReimport.AddUObject(this, &USpineSkeletonDataAsset::OnAtlasReimport);
+	GEditor->GetEditorSubsystem<UImportSubsystem>()->OnAssetPostImport.AddUObject(this, &USpineSkeletonDataAsset::OnAtlasPostImport);
+}
+
+void USpineSkeletonDataAsset::OnAtlasReimport(UObject* InObj)
+{
+	USpineAtlasAsset* TestAtlasAsset = Cast<USpineAtlasAsset>(InObj);
+
+	if (IsValid(TestAtlasAsset) && TestAtlasAsset == RelatedAtlasAsset)
+	{
+		CachedSkeletonData = BuildSkeletonData();
+	}
+}
+
+void USpineSkeletonDataAsset::OnAtlasPostImport(class UFactory* InFactory, UObject* InObj)
+{
+	USpineAtlasAsset* TestAtlasAsset = Cast<USpineAtlasAsset>(InObj);
+
+	if (IsValid(TestAtlasAsset) && TestAtlasAsset == RelatedAtlasAsset)
+	{
+		CachedSkeletonData = BuildSkeletonData();
+	}
+}
+
+void USpineSkeletonDataAsset::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	if (PropertyChangedEvent.Property == nullptr || PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(USpineSkeletonDataAsset, RelatedAtlasAsset))
+	{
+		CachedSkeletonData = BuildSkeletonData();
+	}
+}
+
+#endif
+
+
+
+
+
+void USpineSkeletonDataAsset::GetAssetRegistryTags(TArray<FAssetRegistryTag>& OutTags) const
+{
 #if WITH_EDITORONLY_DATA
-	int dataLen = rawData.Num();
-	if (dataLen == 0) return;
+	if (AssetImportData)
+	{
+		OutTags.Add(FAssetRegistryTag(SourceFileTagName(), AssetImportData->GetSourceData().ToJson(), FAssetRegistryTag::TT_Hidden));
+	}
+#endif
+
+	Super::GetAssetRegistryTags(OutTags);
+}
+
+
+
+
+
+
+void USpineSkeletonDataAsset::PostInitProperties()
+{
+#if WITH_EDITORONLY_DATA
+	if (!HasAnyFlags(RF_ClassDefaultObject))
+	{
+		AssetImportData = NewObject<UAssetImportData>(this, TEXT("AssetImportData"));
+	}
+#endif
+
+	Super::PostInitProperties();
+}
+
+void USpineSkeletonDataAsset::Serialize(FArchive& Ar)
+{
+	Ar.UsingCustomVersion(FSpineSkeletonDataAssetObjectVersion::GUID); //如果是保存,则写入当前ID.
+
+	Super::Serialize(Ar);
+
+	const int32 AssetVersion = Ar.CustomVer(FSpineSkeletonDataAssetObjectVersion::GUID);
+
+	int32 x = 55;
+}
+
+
+
+void USpineSkeletonDataAsset::PostLoad()
+{
+	Super::PostLoad();
+
+	const int32 SpineAssetVersion = GetLinkerCustomVersion(FSpineSkeletonDataAssetObjectVersion::GUID);
+
+	EnsureFullyLoaded(RelatedAtlasAsset);
+
+	CachedSkeletonData = BuildSkeletonData();
+
+#if WITH_EDITOR
+	if (SpineAssetVersion < FSpineSkeletonDataAssetObjectVersion::Add_bIsValid_RawData_Flag)
+	{
+		LoadInfo();
+	}
+
+
+
+	if (GIsEditor && !RegisteredReimportCallback)
+	{
+		if (GEditor)
+		{
+			BindEngineCallback();
+		}
+		else
+		{
+			FCoreDelegates::OnPostEngineInit.AddUObject(this, &ThisClass::BindEngineCallback);
+		}
+		RegisteredReimportCallback = true;
+	}
+#endif
+
+}
+
+
+
+
+
+
+
+
+void USpineSkeletonDataAsset::EnsureFullyLoaded(UObject* Object)
+{
+	if (!Object)
+	{
+		return;
+	}
+
+	bool bLoadInternalReferences = false;
+
+	if (Object->HasAnyFlags(RF_NeedLoad))
+	{
+		FLinkerLoad* Linker = Object->GetLinker();
+		if (ensure(Linker))
+		{
+			Linker->Preload(Object);
+			bLoadInternalReferences = true;
+			check(!Object->HasAnyFlags(RF_NeedLoad));
+		}
+	}
+
+	bLoadInternalReferences = bLoadInternalReferences || Object->HasAnyFlags(RF_NeedPostLoad | RF_NeedPostLoadSubobjects);
+
+	Object->ConditionalPostLoad();
+	Object->ConditionalPostLoadSubobjects();
+
+	if (bLoadInternalReferences)
+	{
+		// Collect a list of all things this element owns
+		TArray<UObject*> ObjectReferences;
+		FReferenceFinder(ObjectReferences, nullptr, false, true, false, true).FindReferences(Object);
+
+		// Iterate over the list, and preload everything so it is valid for refreshing
+		for (UObject* Reference : ObjectReferences)
+		{
+			if (Reference->IsA<UObject>())
+			{
+				EnsureFullyLoaded(Reference);
+			}
+			//	if (Reference->IsA<UMovieSceneSequence>() || Reference->IsA<UMovieScene>() || Reference->IsA<UMovieSceneTrack>() || Reference->IsA<UMovieSceneSection>())
+
+		}
+	}
+}
+
+#if WITH_EDITOR
+class SP_API NullAttachmentLoader : public AttachmentLoader {
+public:
+
+	virtual TSharedPtr < RegionAttachment>  newRegionAttachment(Skin& skin, const FString& name, const FString& path) 
+	{
+		return MakeShared<RegionAttachment>(name);
+	}
+
+	virtual TSharedPtr < MeshAttachment>  newMeshAttachment(Skin& skin, const FString& name, const FString& path) {
+		return MakeShared<MeshAttachment>(name);
+	}
+
+	virtual TSharedPtr < BoundingBoxAttachment>  newBoundingBoxAttachment(Skin& skin, const FString& name) {
+		return MakeShared<BoundingBoxAttachment>(name);
+	}
+
+	virtual TSharedPtr < PathAttachment>  newPathAttachment(Skin& skin, const FString& name) {
+		return MakeShared<PathAttachment>(name);
+	}
+
+	virtual TSharedPtr < PointAttachment>  newPointAttachment(Skin& skin, const FString& name) {
+		return MakeShared<PointAttachment>(name);
+	}
+
+	virtual TSharedPtr < ClippingAttachment> newClippingAttachment(Skin& skin, const FString& name) {
+		return MakeShared<ClippingAttachment>(name);
+	}
+
+	virtual void configureAttachment(TSharedPtr < Attachment> attachment) {
+
+	}
+};
+
+
+void USpineSkeletonDataAsset::LoadInfo()
+{
+	Bones.Empty();
+	Skins.Empty();
+	Slots.Empty();
+	Attachments.Empty();
+	Animations.Empty();
+	Events.Empty();
+
+	bIsValidJsonRawData = false;
+	bIsValidBinaryRawData = false;
+
+	/*int32 dataLen = rawData.Num();
+	if (dataLen == 0)
+	{
+		return;
+	}*/
+
 	NullAttachmentLoader loader;
-	SkeletonData* skeletonData = nullptr;
-	if (skeletonDataFileName.GetPlainNameString().Contains(TEXT(".json"))) {
-		SkeletonJson* json = new (__FILE__, __LINE__) SkeletonJson(&loader);
-		if(checkJson((const char*)rawData.GetData())) skeletonData = json->readSkeletonData((const char*)rawData.GetData());
-		if (!skeletonData) {
-			FMessageDialog::Debugf(FText::FromString(FString("Couldn't load skeleton data and/or atlas. Please ensure the version of your exported data matches your runtime version.\n\n") + skeletonDataFileName.GetPlainNameString() + FString("\n\n") + UTF8_TO_TCHAR(json->getError().buffer())));
-			UE_LOG(SpineLog, Error, TEXT("Couldn't load skeleton data and atlas: %s"), UTF8_TO_TCHAR(json->getError().buffer()));
+	TSharedPtr<SkeletonData> skeletonData;
+
+	FString ErrorString;
+
+	if (AssetImportData->GetFirstFilename().Contains(TEXT(".json")))
+	{
+		SkeletonJson json(&loader);
+		if (!checkJson((const char*)rawData.GetData()))
+		{
+			ErrorString = FString::Printf(TEXT("Asset:[%s] invalid json data,couldn't pass checkJson check"), *GetNameSafe(this));
 		}
-		delete json;
-	}
-	else {
-		SkeletonBinary* binary = new (__FILE__, __LINE__) SkeletonBinary(&loader);
-		if (checkBinary((const char*)rawData.GetData(), (int)rawData.Num())) skeletonData = binary->readSkeletonData((const unsigned char*)rawData.GetData(), (int)rawData.Num());
-		if (!skeletonData) {
-			FMessageDialog::Debugf(FText::FromString(FString("Couldn't load skeleton data and/or atlas. Please ensure the version of your exported data matches your runtime version.\n\n") + skeletonDataFileName.GetPlainNameString() + FString("\n\n") + UTF8_TO_TCHAR(binary->getError().buffer())));
-			UE_LOG(SpineLog, Error, TEXT("Couldn't load skeleton data and atlas: %s"), UTF8_TO_TCHAR(binary->getError().buffer()));
+		else if (auto TempPtr = json.readSkeletonData((const char*)rawData.GetData()))
+		{
+			skeletonData = MakeShareable(TempPtr);
+			bIsValidJsonRawData = true;
 		}
-		delete binary;
+		else
+		{
+			ErrorString = UTF8_TO_TCHAR(json.getError().buffer());
+		}
 	}
-	if (skeletonData) {
-		Bones.Empty();
+	else
+	{
+		SkeletonBinary binary(&loader);
+		if (!checkBinary((const char*)rawData.GetData(), rawData.Num()))
+		{
+			ErrorString = FString::Printf(TEXT("Asset:[%s] invalid binary data,couldn't pass checkBinary check"),*GetNameSafe(this));
+		}
+		else if (auto TempPtr = binary.readSkeletonData((const unsigned char*)rawData.GetData(),rawData.Num()))
+		{
+			skeletonData = MakeShareable(TempPtr);
+			bIsValidBinaryRawData = true;
+		}
+		else
+		{
+			ErrorString = UTF8_TO_TCHAR(binary.getError().buffer());
+		}
+	}
+
+	if (skeletonData.IsValid())
+	{
 		for (int i = 0; i < skeletonData->getBones().size(); i++)
-			Bones.Add(UTF8_TO_TCHAR(skeletonData->getBones()[i]->getName().buffer()));
-		Skins.Empty();
-		for (int i = 0; i < skeletonData->getSkins().size(); i++)
-			Skins.Add(UTF8_TO_TCHAR(skeletonData->getSkins()[i]->getName().buffer()));
-		Slots.Empty();
+			Bones.Add(skeletonData->getBones()[i]->getName().ToString());
+
+		for (int i = 0; i < skeletonData->getSkins().Num(); i++)
+			Skins.Add(skeletonData->getSkins()[i]->getName());
+
 		for (int i = 0; i < skeletonData->getSlots().size(); i++)
-			Slots.Add(UTF8_TO_TCHAR(skeletonData->getSlots()[i]->getName().buffer()));
-		Animations.Empty();
-		for (int i = 0; i < skeletonData->getAnimations().size(); i++)
+		{
+			Slots.Add(skeletonData->getSlots()[i]->getName());
+			Attachments.Add(skeletonData->getSlots()[i]->getAttachmentName());
+		}
+
+		for (int i = 0; i < skeletonData->getAnimations().Num(); i++)
 			Animations.Add(UTF8_TO_TCHAR(skeletonData->getAnimations()[i]->getName().buffer()));
-		Events.Empty();
+
 		for (int i = 0; i < skeletonData->getEvents().size(); i++)
 			Events.Add(UTF8_TO_TCHAR(skeletonData->getEvents()[i]->getName().buffer()));
-		delete skeletonData;
+
+		TArray<FSpineAnimEventPair> PreSettingArray = MoveTemp(AnimEventSetupArray);
+		for (const FString& EventName : Events)
+		{
+			FSpineAnimEventPair& AddEmptyPair = AnimEventSetupArray.AddDefaulted_GetRef();
+			AddEmptyPair.EventName = EventName;
+
+			if (FSpineAnimEventPair* FoundValidPairPtr = PreSettingArray.FindByPredicate([&EventName](const FSpineAnimEventPair& TestPair) { return TestPair.EventName == EventName && TestPair.RemapToGameplayEventTag.IsValid();  }))
+			{
+				AddEmptyPair.RemapToGameplayEventTag = FoundValidPairPtr->RemapToGameplayEventTag;
+			}
+		}
 	}
+	else
+	{
+		FMessageDialog::Debugf(FText::FromString(ErrorString));
+		UE_LOG(SpineLog, Error, TEXT("%s"), *ErrorString);
+	}
+}
 #endif
+
+
+
+
+TSharedPtr<spine::SkeletonData> USpineSkeletonDataAsset::BuildSkeletonData()
+{
+	if (!IsValid(RelatedAtlasAsset))
+	{
+		return nullptr;
+	}
+
+	auto SpineAtlas = RelatedAtlasAsset->GetAtlas();
+	check(SpineAtlas.IsValid());
+
+	spine::SkeletonData* MySkeletonData = nullptr;
+
+	int dataLen = rawData.Num();
+	FString ErrorString;
+	if (bIsValidJsonRawData&&ensure(checkJson((const char*)rawData.GetData())))
+	{
+		SkeletonJson json(SpineAtlas.Get());
+		MySkeletonData = json.readSkeletonData((const char*)rawData.GetData());
+		if (!MySkeletonData)
+		{
+			ErrorString = FString::Printf(TEXT("Asset:[%s] Couldn't build skeleton data: %s"), *GetNameSafe(this), UTF8_TO_TCHAR(json.getError().buffer()));
+		}
+	}
+	else if (bIsValidBinaryRawData&&ensure(checkBinary((const char*)rawData.GetData(), (int)rawData.Num())))
+	{
+		SkeletonBinary binary(SpineAtlas.Get());
+		MySkeletonData = binary.readSkeletonData((const unsigned char*)rawData.GetData(), (int)rawData.Num());
+		if (!MySkeletonData)
+		{
+			ErrorString = FString::Printf(TEXT("Asset:[%s] Couldn't build skeleton data: %s"), *GetNameSafe(this), UTF8_TO_TCHAR(binary.getError().buffer()));
+		}
+	}
+	else
+	{
+		ErrorString = FString::Printf(TEXT("Asset:[%s] Couldn't build skeleton data Unknow Reason"), *GetNameSafe(this));
+	}
+
+	if (!MySkeletonData)
+	{
+#if WITH_EDITOR
+	//	FMessageDialog::Debugf(FText::FromString(ErrorString));
+#endif
+		UE_LOG(SpineLog, Error, TEXT("%s"), *ErrorString);
+	}
+
+
+	return MySkeletonData ? MakeShareable(MySkeletonData) : nullptr;
 }
 
-SkeletonData* USpineSkeletonDataAsset::GetSkeletonData (Atlas* Atlas) {
-	if (!skeletonData || lastAtlas != Atlas) {
-		if (skeletonData) {
-			delete skeletonData;
-			skeletonData = nullptr;
-		}		
-		int dataLen = rawData.Num();
-		if (skeletonDataFileName.GetPlainNameString().Contains(TEXT(".json"))) {
-			SkeletonJson* json = new (__FILE__, __LINE__) SkeletonJson(Atlas);
-			if (checkJson((const char*)rawData.GetData())) this->skeletonData = json->readSkeletonData((const char*)rawData.GetData());
-			if (!skeletonData) {
-#if WITH_EDITORONLY_DATA
-				FMessageDialog::Debugf(FText::FromString(FString("Couldn't load skeleton data and/or atlas. Please ensure the version of your exported data matches your runtime version.\n\n") + skeletonDataFileName.GetPlainNameString() + FString("\n\n") + UTF8_TO_TCHAR(json->getError().buffer())));
-#endif
-				UE_LOG(SpineLog, Error, TEXT("Couldn't load skeleton data and atlas: %s"), UTF8_TO_TCHAR(json->getError().buffer()));
-			}
-			delete json;
-		} else {
-			SkeletonBinary* binary = new (__FILE__, __LINE__) SkeletonBinary(Atlas);
-			if (checkBinary((const char*)rawData.GetData(), (int)rawData.Num())) this->skeletonData = binary->readSkeletonData((const unsigned char*)rawData.GetData(), (int)rawData.Num());
-			if (!skeletonData) {
-#if WITH_EDITORONLY_DATA
-				FMessageDialog::Debugf(FText::FromString(FString("Couldn't load skeleton data and/or atlas. Please ensure the version of your exported data matches your runtime version.\n\n") + skeletonDataFileName.GetPlainNameString() + FString("\n\n") + UTF8_TO_TCHAR(binary->getError().buffer())));
-#endif
-				UE_LOG(SpineLog, Error, TEXT("Couldn't load skeleton data and atlas: %s"), UTF8_TO_TCHAR(binary->getError().buffer()));
-			}
-			delete binary;
-		}
-		if (animationStateData) {
-			delete animationStateData;
-			animationStateData = nullptr;
-			GetAnimationStateData(Atlas);
-		}
-		lastAtlas = Atlas;
-	}
-	return this->skeletonData;
+TSharedPtr<spine::SkeletonData> USpineSkeletonDataAsset::GetSpineSkeletonData()const
+{
+	return CachedSkeletonData;
 }
 
-AnimationStateData* USpineSkeletonDataAsset::GetAnimationStateData(Atlas* atlas) {
-	if (!animationStateData) {
-		SkeletonData* data = GetSkeletonData(atlas);
-		animationStateData = new (__FILE__, __LINE__) AnimationStateData(data);
+TSharedPtr<spine::AnimationStateData> USpineSkeletonDataAsset::GetAnimationStateData() const
+{
+	TSharedPtr<spine::SkeletonData> SkeletonData = GetSpineSkeletonData();
+
+	if (SkeletonData.IsValid()==false)
+	{
+		return nullptr;
 	}
-	for (auto& data : MixData) {
-		if (!data.From.IsEmpty() && !data.To.IsEmpty()) {
+
+	TSharedRef<spine::AnimationStateData> ReturnAnimStateData = MakeShared<spine::AnimationStateData>(SkeletonData->AsShared());
+
+	for (auto& data : MixData) 
+	{
+		if (!data.From.IsEmpty() && !data.To.IsEmpty())
+		{
 			const char* fromChar = TCHAR_TO_UTF8(*data.From);
 			const char* toChar = TCHAR_TO_UTF8(*data.To);
-			animationStateData->setMix(fromChar, toChar, data.Mix);
+			ReturnAnimStateData->setMix(fromChar, toChar, data.Mix);
 		}
 	}
-	animationStateData->setDefaultMix(DefaultMix);
-	return this->animationStateData;
+	ReturnAnimStateData->setDefaultMix(DefaultMix);
+
+	return   ReturnAnimStateData;
 }
 
-void USpineSkeletonDataAsset::SetMix(const FString& from, const FString& to, float mix) {
-	FSpineAnimationStateMixData data;
-	data.From = from;
-	data.To = to;
-	data.Mix = mix;	
-	this->MixData.Add(data);
-	if (lastAtlas) {
-		GetAnimationStateData(lastAtlas);
-	}
-}
 
-float USpineSkeletonDataAsset::GetMix(const FString& from, const FString& to) {
-	for (auto& data : MixData) {
-		if (data.From.Equals(from) && data.To.Equals(to)) return data.Mix;
-	}
-	return 0;
-}
+
 
 #undef LOCTEXT_NAMESPACE

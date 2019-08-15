@@ -1,34 +1,37 @@
-/******************************************************************************
- * Spine Runtimes License Agreement
- * Last updated May 1, 2019. Replaces all prior versions.
+﻿/******************************************************************************
+ * Spine Runtimes Software License v2.5
  *
- * Copyright (c) 2013-2019, Esoteric Software LLC
+ * Copyright (c) 2013-2016, Esoteric Software
+ * All rights reserved.
  *
- * Integration of the Spine Runtimes into software or otherwise creating
- * derivative works of the Spine Runtimes is permitted under the terms and
- * conditions of Section 2 of the Spine Editor License Agreement:
- * http://esotericsoftware.com/spine-editor-license
+ * You are granted a perpetual, non-exclusive, non-sublicensable, and
+ * non-transferable license to use, install, execute, and perform the Spine
+ * Runtimes software and derivative works solely for personal or internal
+ * use. Without the written permission of Esoteric Software (see Section 2 of
+ * the Spine Software License Agreement), you may not (a) modify, translate,
+ * adapt, or develop new applications using the Spine Runtimes or otherwise
+ * create derivative works or improvements of the Spine Runtimes or (b) remove,
+ * delete, alter, or obscure any trademarks or any copyright, trademark, patent,
+ * or other intellectual property or proprietary rights notices on or in the
+ * Software, including any copy thereof. Redistributions in binary or source
+ * form must include this license and terms.
  *
- * Otherwise, it is permitted to integrate the Spine Runtimes into software
- * or otherwise create derivative works of the Spine Runtimes (collectively,
- * "Products"), provided that each user of the Products must obtain their own
- * Spine Editor license and redistribution of the Products in any form must
- * include this license and copyright notice.
- *
- * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE LLC "AS IS" AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
- * NO EVENT SHALL ESOTERIC SOFTWARE LLC BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS
- * INTERRUPTION, OR LOSS OF USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * THIS SOFTWARE IS PROVIDED BY ESOTERIC SOFTWARE "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ESOTERIC SOFTWARE BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, BUSINESS INTERRUPTION, OR LOSS OF
+ * USE, DATA, OR PROFITS) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+ * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 
 #ifndef Spine_Skeleton_h
 #define Spine_Skeleton_h
+
+#include "CoreMinimal.h"
 
 #include <spine/Vector.h>
 #include <spine/MathUtil.h>
@@ -57,7 +60,7 @@ class Skin;
 
 class Attachment;
 
-class SP_API Skeleton : public SpineObject {
+class SP_API Skeleton : public TSharedFromThis<Skeleton> {
 	friend class AnimationState;
 
 	friend class SkeletonBounds;
@@ -93,7 +96,7 @@ class SP_API Skeleton : public SpineObject {
 	friend class TwoColorTimeline;
 
 public:
-	explicit Skeleton(SkeletonData *skeletonData);
+	explicit Skeleton(TSharedRef<SkeletonData> InSkeletonData);
 
 	~Skeleton();
 
@@ -115,19 +118,19 @@ public:
 	void setSlotsToSetupPose();
 
 	/// @return May be NULL.
-	Bone *findBone(const String &boneName);
+	Bone *findBone(const FName &boneName);
 
 	/// @return -1 if the bone was not found.
-	int findBoneIndex(const String &boneName);
+	int findBoneIndex(const FName &boneName);
 
 	/// @return May be NULL.
-	Slot *findSlot(const String &slotName);
+	TSharedPtr<Slot> findSlot(const FString &slotName);
 
 	/// @return -1 if the bone was not found.
-	int findSlotIndex(const String &slotName);
+	int32 findSlotIndex(const FString &slotName);
 
 	/// Sets a skin by name (see setSkin).
-	void setSkin(const String &skinName);
+	void setSkin(const FString &skinName);
 
 	/// Attachments from the new skin are attached if the corresponding attachment from the old skin was attached.
 	/// If there was no old skin, each slot's setup mode attachment is attached from the new skin.
@@ -137,16 +140,16 @@ public:
 	/// skeleton is rendered to allow any attachment keys in the current animation(s) to hide or show attachments from the new skin.
 	///
 	/// @param newSkin May be NULL.
-	void setSkin(Skin *newSkin);
+	void setSkin(TSharedPtr<Skin> newSkin);
 
 	/// @return May be NULL.
-	Attachment *getAttachment(const String &slotName, const String &attachmentName);
+	TSharedPtr<Attachment> getAttachment(const FString &slotName, const FString &attachmentName);
 
 	/// @return May be NULL.
-	Attachment *getAttachment(int slotIndex, const String &attachmentName);
+	TSharedPtr<Attachment> getAttachment(int slotIndex, const FString &attachmentName);
 
 	/// @param attachmentName May be empty.
-	void setAttachment(const String &slotName, const String &attachmentName);
+	void setAttachment(const FString &slotName, const FString &attachmentName);
 
 	/// @return May be NULL.
 	IkConstraint *findIkConstraint(const String &constraintName);
@@ -169,15 +172,15 @@ public:
 
 	Bone *getRootBone();
 
-	SkeletonData *getData();
+	TSharedRef<SkeletonData> getData();
 
 	Vector<Bone *> &getBones();
 
 	Vector<Updatable *> &getUpdateCacheList();
 
-	Vector<Slot *> &getSlots();
+	TArray<TSharedPtr<Slot>>  &getSlots();
 
-	Vector<Slot *> &getDrawOrder();
+	TArray<TSharedPtr<Slot>>  &getDrawOrder();
 
 	Vector<IkConstraint *> &getIkConstraints();
 
@@ -185,7 +188,7 @@ public:
 
 	Vector<TransformConstraint *> &getTransformConstraints();
 
-	Skin *getSkin();
+	TSharedPtr<Skin> getSkin();
 
 	Color &getColor();
 
@@ -212,16 +215,16 @@ public:
 	void setScaleY(float inValue);
 
 private:
-	SkeletonData *_data;
+	TSharedRef<SkeletonData> _data;
 	Vector<Bone *> _bones;
-	Vector<Slot *> _slots;
-	Vector<Slot *> _drawOrder;
+	TArray<TSharedPtr<Slot>> _slots;
+	TArray<TSharedPtr<Slot>> _drawOrder;
 	Vector<IkConstraint *> _ikConstraints;
 	Vector<TransformConstraint *> _transformConstraints;
 	Vector<PathConstraint *> _pathConstraints;
 	Vector<Updatable *> _updateCache;
 	Vector<Bone *> _updateCacheReset;
-	Skin *_skin;
+	TSharedPtr<Skin> _skin;
 	Color _color;
 	float _time;
 	float _scaleX, _scaleY;
@@ -233,7 +236,7 @@ private:
 
 	void sortTransformConstraint(TransformConstraint *constraint);
 
-	void sortPathConstraintAttachment(Skin *skin, size_t slotIndex, Bone &slotBone);
+	void sortPathConstraintAttachment(Skin *skin, int32 slotIndex, Bone &slotBone);
 
 	void sortPathConstraintAttachment(Attachment *attachment, Bone &slotBone);
 
