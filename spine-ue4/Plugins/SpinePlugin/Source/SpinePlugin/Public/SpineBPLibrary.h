@@ -33,5 +33,15 @@ public:
 	UFUNCTION(BlueprintCallable)
 		static bool FetchSkinAttachmentDescFromDatable(UDataTable* InTable, TArray<FReplaceSkinAttachmentDesc>& OutAttachmentDescs);
 		
-	
+	UFUNCTION(BlueprintPure)
+	static FUpdateMaterialParam MakeCurveTypeMaterialParam(FName ParamName,
+		class UCurveBase* ParamCurve, ESpineMaterialBlendType BlendType);
+
+	UFUNCTION(BlueprintPure)
+	static FUpdateMaterialParam MakeFloatTypeMaterialParam(FName ParamName,
+		float FloatValue, ESpineMaterialBlendType BlendType);
+
+	UFUNCTION(BlueprintPure)
+	static FUpdateMaterialParam MakeColorTypeMaterialParam(FName ParamName,
+		FLinearColor ColorValue, ESpineMaterialBlendType BlendType);
 };

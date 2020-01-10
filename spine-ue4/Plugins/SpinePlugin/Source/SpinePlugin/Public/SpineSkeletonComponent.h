@@ -33,16 +33,13 @@ class SPINEPLUGIN_API USpineSkeletonComponent: public UProceduralMeshComponent {
 	GENERATED_BODY()
 
 public:
-	USpineSkeletonComponent();
+	USpineSkeletonComponent(const FObjectInitializer& ObjectInitializer);
 
-	UPROPERTY(EditDefaultsOnly, Category = Spine)
+	UPROPERTY(Transient,DuplicateTransient)
 	USpineSkeletonDataAsset* SkeletonData;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Spine)
 	bool bForceRefresh;
-
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|Skeleton")
-	USpineSkeletonDataAsset* GetSkeletonAsset()const {	return SkeletonData;}
 	
 	TSharedPtr<spine::Skeleton> GetSkeleton ()const { return CurrentSpineSkeleton; };
 
@@ -54,6 +51,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Components|Spine|Skeleton")
 	void SetSkeletonAsset(USpineSkeletonDataAsset* InSkeletonAsset);
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|Skeleton")
+	USpineSkeletonDataAsset* GetSkeletonAsset()const { return SkeletonData; }
 
 	UPROPERTY(BlueprintAssignable)
 	FOnSpineSkeletonUpdatedDelegateSignature OnSpineSkeletonUpdated;
@@ -122,8 +122,6 @@ public:
 	
 //	virtual void BeginPlay () override;
 	virtual void TickComponent (float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;	
-	virtual void FinishDestroy() override;
-
 
 	virtual FTransform GetSocketTransform(FName InSocketName, ERelativeTransformSpace TransformSpace = RTS_World) const override;
 	virtual bool HasAnySockets() const override;
@@ -145,6 +143,9 @@ public:
 	/*UFUNCTION(BlueprintCallable)
 	FString GetCurrentSkinName()const { return CurrentSkinName; }*/
 
+
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 	//virtual bool Sucker(const FCustomAtlasRegion& InRegion, FString TemplateSkin=TEXT("Skin_A"), FString SlotName= TEXT("Socket"), FString AttachmentName= TEXT("SkinPlaceholder"));
 	
 protected:
@@ -156,24 +157,25 @@ protected:
 
 	TSharedPtr<spine::SkeletonData> lastSkeletonData;
 
-	UPROPERTY()
-		USpineSkeletonDataAsset* lastSkeletonAsset = nullptr;
+	UPROPERTY(Transient, DuplicateTransient)
+	USpineSkeletonDataAsset* LastSkeletonAsset = nullptr;
 
 public:
+
 	/* Updates this skeleton renderer using the provided skeleton animation component. */
 	void InternalTick_Renderer();
 
 	// Material Instance parents
-		UPROPERTY(Category = "Spine Render", EditAnywhere, BlueprintReadOnly)
+		UPROPERTY(Category = "Spine Render", EditAnywhere, BlueprintReadWrite)
 			UMaterialInterface* NormalBlendMaterial;
 
-		UPROPERTY(Category = "Spine Render", EditAnywhere, BlueprintReadOnly)
+		UPROPERTY(Category = "Spine Render", EditAnywhere, BlueprintReadWrite)
 			UMaterialInterface* AdditiveBlendMaterial;
 
-		UPROPERTY(Category = "Spine Render", EditAnywhere, BlueprintReadOnly)
+		UPROPERTY(Category = "Spine Render", EditAnywhere, BlueprintReadWrite)
 			UMaterialInterface* MultiplyBlendMaterial;
 
-		UPROPERTY(Category = "Spine Render", EditAnywhere, BlueprintReadOnly)
+		UPROPERTY(Category = "Spine Render", EditAnywhere, BlueprintReadWrite)
 			UMaterialInterface* ScreenBlendMaterial;
 
 		// Need to hold on to the dynamic instances, or the GC will kill us while updating them
@@ -210,3 +212,5 @@ protected:
 
 	void Flush(int &Idx, TArray<FVector> &Vertices, TArray<int32> &Indices, TArray<FVector> &Normals, TArray<FVector2D> &Uvs, TArray<FColor> &Colors, TArray<FVector> &Colors2, UMaterialInstanceDynamic* Material);
 };
+
+

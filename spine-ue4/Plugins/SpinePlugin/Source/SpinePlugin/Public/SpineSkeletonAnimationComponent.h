@@ -68,7 +68,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSpineAnimationDisposeDelegate, UTra
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSpineAnimationStateMachineDelegate);
 
 
-UCLASS(ClassGroup=(Spine), meta=(BlueprintSpawnableComponent), BlueprintType)
+UCLASS(ClassGroup=(Spine),BlueprintType, NotBlueprintable)
 class SPINEPLUGIN_API UTrackEntry: public UObject {
 	GENERATED_BODY ()
 
@@ -80,86 +80,86 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
 	int GetTrackIndex();
 
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
 		bool GetLoop();
 	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
 		void SetLoop(bool loop);
 	
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
 		float GetEventThreshold();
 	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
 		void SetEventThreshold(float eventThreshold);
 
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
 		float GetAttachmentThreshold();
 
 	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
 		void SetAttachmentThreshold(float attachmentThreshold);
 
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
 		float GetDrawOrderThreshold();
 
 	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
 		void SetDrawOrderThreshold(float drawOrderThreshold);
 
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
 		float GetAnimationStart();
 	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
 		void SetAnimationStart(float animationStart);
 
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
 		float GetAnimationEnd();
 
 	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
 		void SetAnimationEnd(float animationEnd);
 
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
 		float GetAnimationLast();
 	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
 		void SetAnimationLast(float animationLast);
 
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
 		float GetDelay();
 	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
 		void SetDelay(float delay);
 
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
 		float GetTrackTime();
 	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
 		void SetTrackTime(float trackTime);
 
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
 		float GetTrackEnd();
 	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
 		void SetTrackEnd(float trackEnd);
 
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
 		float GetTimeScale();
 	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
 		void SetTimeScale(float timeScale);
 
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
 		float GetAlpha();
 	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
 		void SetAlpha(float alpha);
 
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
 		float GetMixTime();
 	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
 		void SetMixTime(float mixTime);
 
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
 		float GetMixDuration();
 	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
 		void SetMixDuration(float mixDuration);
 
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
 		FString GetAnimationName();
 
 	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
 		float GetAnimationDuration();
 
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
 	bool IsValidAnimation() { return entry.IsValid(); }
 
 	UPROPERTY(BlueprintAssignable, Category = "Components|Spine|TrackEntry")
@@ -185,20 +185,19 @@ protected:
 };
 
 class USpineAtlasAsset;
-UCLASS(ClassGroup=(Spine), meta=(BlueprintSpawnableComponent))
+
+UCLASS(ClassGroup=(Spine), hidecategories = (ProceduralMesh,Physics,Collision), meta=(BlueprintSpawnableComponent))
 class SPINEPLUGIN_API USpineSkeletonAnimationComponent: public USpineSkeletonComponent {
 	GENERATED_BODY()
 
 public:
 	TSharedPtr<spine::AnimationState> GetAnimationState () { return SpineAnimState; };
 		
-	USpineSkeletonAnimationComponent ();
+	USpineSkeletonAnimationComponent (const FObjectInitializer& ObjectInitializer);
 	
 	virtual void BeginPlay () override;
 		
 	virtual void TickComponent (float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
-	virtual void FinishDestroy () override;
 
 	//Added functions for manual configuration
 
@@ -234,12 +233,12 @@ public:
 	UTrackEntry* AddAnimation (int trackIndex, FString animationName, bool loop, float delay);
 	
 	UFUNCTION(BlueprintCallable, Category="Components|Spine|Animation")
-	UTrackEntry* SetEmptyAnimation (int trackIndex, float mixDuration);
+	void SetEmptyAnimation (int trackIndex, float mixDuration);
 	
 	UFUNCTION(BlueprintCallable, Category="Components|Spine|Animation")
-	UTrackEntry* AddEmptyAnimation (int trackIndex, float mixDuration, float delay);
+	void AddEmptyAnimation (int trackIndex, float mixDuration, float delay);
 	
-	UFUNCTION(BlueprintCallable, Category="Components|Spine|Animation")
+	UFUNCTION(BlueprintPure, Category="Components|Spine|Animation")
 	UTrackEntry* GetCurrent (int trackIndex);
 	
 	UFUNCTION(BlueprintCallable, Category="Components|Spine|Animation")
@@ -264,14 +263,14 @@ public:
 	FSpineAnimationStateMachineDelegate  AnimationStateMachineOn;
 
 	UPROPERTY(BlueprintAssignable, Category = "Components|Spine|Animation")
-	FSpineAnimationStateMachineDelegate AnimationStateMachineOff;
+	FSpineAnimationStateMachineDelegate  AnimationStateMachineOff;
 
 	void Internal_OnAnimationEvent(UTrackEntry* Entry, FSpineEvent Evt);
 
 	UFUNCTION(BlueprintCallable)
 	void AddDynamicAnimEventListener(const FSpineAnimationSpec& AnimDesc, FString AnimEvent, FGameplayTag RemapToTag);
 
-	UPROPERTY(VisibleAnywhere,Transient)
+	UPROPERTY(VisibleAnywhere,Transient, Category = Animation)
 	TMap<FSpineAnimEventDesc, FGameplayTag>  DynamicAnimEventListenerMap;
 
 	UPROPERTY(BlueprintAssignable, Category="Components|Spine|Animation")
@@ -283,15 +282,23 @@ public:
 	UPROPERTY(BlueprintAssignable, Category="Components|Spine|Animation")
 	FSpineAnimationDisposeDelegate AnimationDispose;
 
-	UPROPERTY(EditAnywhere, Category=Spine)
-	FString PreviewAnimation;
+	// 数字越小,越优先被渲染.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Spine)
+	int32 Prior;
 
-	UPROPERTY(EditAnywhere, Category=Spine)
-	FString PreviewSkin;
+
+#if WITH_EDITOR
+
+	UPROPERTY(EditAnywhere, Category = Spine)
+	FSpineAnimationSpec PreviewAnimSpec;
+
+	UPROPERTY(EditAnywhere, Category = Spine)
+	FString PreviewSkinName = TEXT("default");
+#endif
 	
 	// used in C event callback. Needs to be public as we can't call
 	// protected methods from plain old C function.
-	void GCTrackEntry(UTrackEntry* entry) { trackEntries.Remove(entry); }
+	void GCTrackEntry(UTrackEntry* entry);
 
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
@@ -308,18 +315,96 @@ public:
 
 	virtual bool SetSkin(FString SkinName) override;
 
+	void StopAnimationStateMachine();
+
+	void AllowAnimationStateMachine();
+
+
+	virtual void OnRegister() override;
+
+
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 protected:
 	TSharedPtr<spine::AnimationState> SpineAnimState;
 
 	// keep track of track entries so they won't get GCed while
 	// in transit within a blueprint
-	UPROPERTY()
-	TSet<UTrackEntry*> trackEntries;
+	UPROPERTY(Transient,DuplicateTransient)
+	TArray<UTrackEntry*> trackEntries;
 
 private:
 	UPROPERTY(Transient)
 	bool bIsPaused = false;
 
-	FString lastPreviewAnimation;
-	FString lastPreviewSkin;
+	UPROPERTY(Transient)
+	bool bCanPlayNormalAnimStateMachine = true;
+
+	UPROPERTY(Transient)
+	bool bIsAnimStateMachineWorking = false;
+
+	void ConditionStartAnimationStateMachine();
+public:
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|Animation")
+	bool IsAnimStateMachineWorking()const { return bIsAnimStateMachineWorking; }
+
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|Animation")
+	bool IsSpineAnimSpecPlaying(const FSpineAnimationSpec& InSpec);
+
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|Animation")
+	bool IsAnySpineAnimPlaying();
+
+public:
+	FUpdateMaterialHandle SetMaterialParam(TArray<FUpdateMaterialParam> Params,FName GroupName,float Duration,
+		float BlendInTime, float BlendOutTime,
+		FOnUpdateMaterialFinishedDelegate OnFinished, FK2OnUpdateMaterialFinishedDelegate K2OnFinished= FK2OnUpdateMaterialFinishedDelegate());
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|Material", meta = (DisplayName = "SetMaterialParam", ScriptName = "SetMaterialParam"))
+		FUpdateMaterialHandle K2_SetMaterialParam(TArray<FUpdateMaterialParam> Params, FName GroupName, float Duration = 0.1f, float BlendInTime = 0.05f, float BlendOutTime = 0.05f)
+	{
+		return SetMaterialParam(Params, GroupName, Duration, BlendInTime, BlendOutTime, FOnUpdateMaterialFinishedDelegate());
+	}
+
+
+	void RemoveMaterialParam(FUpdateMaterialHandle InHandle, bool bIsCancel,bool bImmediately, bool bDisableCallback);
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|Material")
+	void ExternaStopMaterialParamByGroupName(FName GroupName,bool bImmediately=true);
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|Material")
+	void ExternaStopAllMaterialParams(bool bImmediately = true);
+
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|Material")
+	void SetAvoidMaterialCrossYOffset(float InOffset);
+
+private:
+
+	UPROPERTY(Transient)
+	bool bIsTicking = false;
+
+	void InternalTick_UpdateMaterialParam(float DeltaTime);
+
+	TArray<UMaterialInstanceDynamic*>& GetBlendMaterial(ESpineMaterialBlendType InBlendType);
+
+	void ApplyCurrentInForceParamToMaterial(const TMap<FParamID, FParamCurrentData>& CurrentInForceParamState);
+
+	TArray<FUpdateMaterialRuntime> UpdateMaterialRuntimes;
+
+
+
+	struct FPendingTriggerFinishCallback
+	{
+		bool bIsCancel;
+
+		FOnUpdateMaterialFinishedDelegate OnFinished;
+
+		FK2OnUpdateMaterialFinishedDelegate K2OnFinished;
+	};
+
+	TArray<FPendingTriggerFinishCallback> InTickPendingTriggerFinishCallbackArray;
+
+	TMap<FParamID, FParamCurrentData>  InTickPendingZeroedFinishState;
+
 };

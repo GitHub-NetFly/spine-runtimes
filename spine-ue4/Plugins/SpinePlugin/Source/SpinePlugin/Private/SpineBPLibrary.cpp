@@ -32,3 +32,21 @@ bool USpineBPLibrary::FetchSkinAttachmentDescFromDatable(UDataTable* InTable, TA
 
 	return bFoundAny;
 }
+
+FUpdateMaterialParam USpineBPLibrary::MakeCurveTypeMaterialParam(FName ParamName,
+	class UCurveBase* ParamCurve, ESpineMaterialBlendType BlendType)
+{
+	return FUpdateMaterialParam::MakeCurveTypeMaterialParam(ParamName, ParamCurve, BlendType);
+}
+
+FUpdateMaterialParam USpineBPLibrary::MakeFloatTypeMaterialParam(FName ParamName, 
+	float FloatValue, ESpineMaterialBlendType BlendType)
+{
+	return FUpdateMaterialParam::MakeFloatTypeMaterialParam(ParamName, FloatValue, BlendType);
+}
+
+FUpdateMaterialParam USpineBPLibrary::MakeColorTypeMaterialParam(FName ParamName, 
+	FLinearColor ColorValue,ESpineMaterialBlendType BlendType)
+{
+	return FUpdateMaterialParam::MakeColorTypeMaterialParam(ParamName, ColorValue, BlendType);
+}

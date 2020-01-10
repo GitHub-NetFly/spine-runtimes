@@ -14,6 +14,7 @@
 #include "SpinePlugin.h"
 
 #include"SpineAtlasAsset.h"
+#include "SpineUnrealTypes.h"
 
 #if WITH_EDITOR
 #include "Factories/Factory.h"
@@ -132,38 +133,11 @@ void USpineSkeletonDataAsset::SetRawData(TArray<uint8> &Data)
 
 	LoadInfo();
 
-	CachedSkeletonData = BuildSkeletonData();
+	RebuildCachedSkeletonData();
 
 	//	MarkPackageDirty();
 }
 
-void USpineSkeletonDataAsset::BindEngineCallback()
-{
-	check(GEditor);
-
-	GEditor->GetEditorSubsystem<UImportSubsystem>()->OnAssetReimport.AddUObject(this, &USpineSkeletonDataAsset::OnAtlasReimport);
-	GEditor->GetEditorSubsystem<UImportSubsystem>()->OnAssetPostImport.AddUObject(this, &USpineSkeletonDataAsset::OnAtlasPostImport);
-}
-
-void USpineSkeletonDataAsset::OnAtlasReimport(UObject* InObj)
-{
-	USpineAtlasAsset* TestAtlasAsset = Cast<USpineAtlasAsset>(InObj);
-
-	if (IsValid(TestAtlasAsset) && TestAtlasAsset == RelatedAtlasAsset)
-	{
-		CachedSkeletonData = BuildSkeletonData();
-	}
-}
-
-void USpineSkeletonDataAsset::OnAtlasPostImport(class UFactory* InFactory, UObject* InObj)
-{
-	USpineAtlasAsset* TestAtlasAsset = Cast<USpineAtlasAsset>(InObj);
-
-	if (IsValid(TestAtlasAsset) && TestAtlasAsset == RelatedAtlasAsset)
-	{
-		CachedSkeletonData = BuildSkeletonData();
-	}
-}
 
 void USpineSkeletonDataAsset::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
 {
@@ -171,7 +145,7 @@ void USpineSkeletonDataAsset::PostEditChangeProperty(struct FPropertyChangedEven
 
 	if (PropertyChangedEvent.Property == nullptr || PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(USpineSkeletonDataAsset, RelatedAtlasAsset))
 	{
-		CachedSkeletonData = BuildSkeletonData();
+		 RebuildCachedSkeletonData();
 	}
 }
 
@@ -229,9 +203,9 @@ void USpineSkeletonDataAsset::PostLoad()
 
 	const int32 SpineAssetVersion = GetLinkerCustomVersion(FSpineSkeletonDataAssetObjectVersion::GUID);
 
-	EnsureFullyLoaded(RelatedAtlasAsset);
+	FSpineUtility::EnsureFullyLoaded(RelatedAtlasAsset);
 
-	CachedSkeletonData = BuildSkeletonData();
+	RebuildCachedSkeletonData();
 
 #if WITH_EDITOR
 	if (SpineAssetVersion < FSpineSkeletonDataAssetObjectVersion::Add_bIsValid_RawData_Flag)
@@ -239,20 +213,6 @@ void USpineSkeletonDataAsset::PostLoad()
 		LoadInfo();
 	}
 
-
-
-	if (GIsEditor && !RegisteredReimportCallback)
-	{
-		if (GEditor)
-		{
-			BindEngineCallback();
-		}
-		else
-		{
-			FCoreDelegates::OnPostEngineInit.AddUObject(this, &ThisClass::BindEngineCallback);
-		}
-		RegisteredReimportCallback = true;
-	}
 #endif
 
 }
@@ -260,53 +220,6 @@ void USpineSkeletonDataAsset::PostLoad()
 
 
 
-
-
-
-
-void USpineSkeletonDataAsset::EnsureFullyLoaded(UObject* Object)
-{
-	if (!Object)
-	{
-		return;
-	}
-
-	bool bLoadInternalReferences = false;
-
-	if (Object->HasAnyFlags(RF_NeedLoad))
-	{
-		FLinkerLoad* Linker = Object->GetLinker();
-		if (ensure(Linker))
-		{
-			Linker->Preload(Object);
-			bLoadInternalReferences = true;
-			check(!Object->HasAnyFlags(RF_NeedLoad));
-		}
-	}
-
-	bLoadInternalReferences = bLoadInternalReferences || Object->HasAnyFlags(RF_NeedPostLoad | RF_NeedPostLoadSubobjects);
-
-	Object->ConditionalPostLoad();
-	Object->ConditionalPostLoadSubobjects();
-
-	if (bLoadInternalReferences)
-	{
-		// Collect a list of all things this element owns
-		TArray<UObject*> ObjectReferences;
-		FReferenceFinder(ObjectReferences, nullptr, false, true, false, true).FindReferences(Object);
-
-		// Iterate over the list, and preload everything so it is valid for refreshing
-		for (UObject* Reference : ObjectReferences)
-		{
-			if (Reference->IsA<UObject>())
-			{
-				EnsureFullyLoaded(Reference);
-			}
-			//	if (Reference->IsA<UMovieSceneSequence>() || Reference->IsA<UMovieScene>() || Reference->IsA<UMovieSceneTrack>() || Reference->IsA<UMovieSceneSection>())
-
-		}
-	}
-}
 
 #if WITH_EDITOR
 class SP_API NullAttachmentLoader : public AttachmentLoader {
@@ -444,11 +357,13 @@ void USpineSkeletonDataAsset::LoadInfo()
 
 
 
-TSharedPtr<spine::SkeletonData> USpineSkeletonDataAsset::BuildSkeletonData()
+void USpineSkeletonDataAsset::RebuildCachedSkeletonData()
 {
+	CachedSkeletonData = nullptr;
+
 	if (!IsValid(RelatedAtlasAsset))
 	{
-		return nullptr;
+		return;
 	}
 
 	auto SpineAtlas = RelatedAtlasAsset->GetAtlas();
@@ -484,13 +399,12 @@ TSharedPtr<spine::SkeletonData> USpineSkeletonDataAsset::BuildSkeletonData()
 	if (!MySkeletonData)
 	{
 #if WITH_EDITOR
-	//	FMessageDialog::Debugf(FText::FromString(ErrorString));
+		//	FMessageDialog::Debugf(FText::FromString(ErrorString));
 #endif
 		UE_LOG(SpineLog, Error, TEXT("%s"), *ErrorString);
 	}
 
-
-	return MySkeletonData ? MakeShareable(MySkeletonData) : nullptr;
+	CachedSkeletonData = MySkeletonData ? MakeShareable(MySkeletonData) : nullptr;
 }
 
 TSharedPtr<spine::SkeletonData> USpineSkeletonDataAsset::GetSpineSkeletonData()const
@@ -498,7 +412,7 @@ TSharedPtr<spine::SkeletonData> USpineSkeletonDataAsset::GetSpineSkeletonData()c
 	return CachedSkeletonData;
 }
 
-TSharedPtr<spine::AnimationStateData> USpineSkeletonDataAsset::GetAnimationStateData() const
+TSharedPtr<spine::AnimationStateData> USpineSkeletonDataAsset::CreateAnimationStateData() const
 {
 	TSharedPtr<spine::SkeletonData> SkeletonData = GetSpineSkeletonData();
 

@@ -8,10 +8,10 @@
 #include "SpineSkeletonComponent.h"
 #include "SpineSkeletonAnimationComponent.h"
 
-#include "SpineBoneFollowerComponent.h"
-#include "SpineBoneDriverComponent.h"
+
 #include "SpineWidget.h"
 
+#include "ToolMenu.h"
 
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "KismetCompiler.h"
@@ -20,9 +20,9 @@
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "Framework/Application/SlateApplication.h"
 #include "PropertyCustomizationHelpers.h"
-//#include "MovieSceneSequence.h"
+
 #include "Framework/MultiBox/MultiBoxBuilder.h"
-//#include "MovieSceneObjectBindingIDPicker.h"
+
 #include "SGraphNode.h"
 #include "ContentBrowserModule.h"
 #include "IContentBrowserSingleton.h"
@@ -37,6 +37,8 @@
 #include "K2Node_CallFunction.h"
 #include "SpineBPLibrary.h"
 //#include "Compilation/MovieSceneCompiler.h"
+
+#include "SpineUnrealTypes.h"
 
 #define LOCTEXT_NAMESPACE "USpineSkeletonDataAsset"
 
@@ -141,46 +143,39 @@ FText UK2Node_GetSpineAnimSpecFromGroup::GetGroupAssetName() const
 	return AnimGroupAsset ? FText::FromName(AnimGroupAsset->GetFName()) : LOCTEXT("NoAnimGroupAsset", "No AnimGroupAsset");
 }
 
-void UK2Node_GetSpineAnimSpecFromGroup::EnsureFullyLoaded(UObject* Object)
+
+
+void UK2Node_GetSpineAnimSpecFromGroup::GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const
 {
-	if (!Object)
-	{
-		return;
-	}
+	Super::GetNodeContextMenuActions(Menu, Context);
 
-	bool bLoadInternalReferences = false;
-
-	if (Object->HasAnyFlags(RF_NeedLoad))
+	if (!Context->bIsDebugging)
 	{
-		FLinkerLoad* Linker = Object->GetLinker();
-		if (ensure(Linker))
+		FToolMenuSection& Section = Menu->AddSection("K2NodeGetSequenceBinding", LOCTEXT("ThisNodeHeader", "This Node"));
+		if (!Context->Pin)
 		{
-			Linker->Preload(Object);
-			bLoadInternalReferences = true;
-			check(!Object->HasAnyFlags(RF_NeedLoad));
-		}
-	}
+			USpineAnimGroupAsset* GroupAsset = GetAnimGroupAsset();
 
-	bLoadInternalReferences = bLoadInternalReferences || Object->HasAnyFlags(RF_NeedPostLoad | RF_NeedPostLoadSubobjects);
-
-	Object->ConditionalPostLoad();
-	Object->ConditionalPostLoadSubobjects();
-
-	if (bLoadInternalReferences)
-	{
-		// Collect a list of all things this element owns
-		TArray<UObject*> ObjectReferences;
-		FReferenceFinder(ObjectReferences, nullptr, false, true, false, true).FindReferences(Object);
-
-		// Iterate over the list, and preload everything so it is valid for refreshing
-		for (UObject* Reference : ObjectReferences)
-		{
-			if (Reference->IsA<USpineSkeletonDataAsset>())
+			Section.AddSubMenu(
+				"SetSequence",
+				LOCTEXT("SetSkeleton_Text", "Skeleton"),
+				LOCTEXT("SetSkeleton_ToolTip", "Sets the GroupAsset to get animation from"),
+				FNewToolMenuDelegate::CreateLambda([=](UToolMenu* SubMenu)
 			{
-				EnsureFullyLoaded(Reference);
-			}
-		//	if (Reference->IsA<UMovieSceneSequence>() || Reference->IsA<UMovieScene>() || Reference->IsA<UMovieSceneTrack>() || Reference->IsA<UMovieSceneSection>())
-			
+				TArray<const UClass*> AllowedClasses({ USpineAnimGroupAsset::StaticClass() });
+
+				TSharedRef<SWidget> MenuContent = PropertyCustomizationHelpers::MakeAssetPickerWithMenu(
+					FAssetData(GroupAsset),
+					true /* bAllowClear */,
+					AllowedClasses,
+					PropertyCustomizationHelpers::GetNewAssetFactoriesForClasses(AllowedClasses),
+					FOnShouldFilterAsset(),
+					FOnAssetSelected::CreateUObject(const_cast<ThisClass*>(this), &UK2Node_GetSpineAnimSpecFromGroup::SetAnimGroupAsset),
+					FSimpleDelegate());
+
+				SubMenu->AddMenuEntry("Section", FToolMenuEntry::InitWidget("Widget", MenuContent, FText::GetEmpty(), false));
+
+			}));
 		}
 	}
 }
@@ -189,7 +184,11 @@ void UK2Node_GetSpineAnimSpecFromGroup::ValidateNodeDuringCompilation(FCompilerR
 {
 	Super::ValidateNodeDuringCompilation(MessageLog);
 
-	auto GroupAsset = GetAnimGroupAsset();
+	USpineAnimGroupAsset* GroupAsset = GetAnimGroupAsset();
+
+	//这个阶段 获取到的对象,在加载蓝图时通过LoadSynchronous 载入的对象 依旧有RF_NeedLoad flag.
+	// 所以需要进行一次EnsureFullyLoaded. 才能拿到载入完毕的对象.
+	FSpineUtility::EnsureFullyLoaded(GroupAsset);
 
 	if (!GroupAsset)
 	{
@@ -242,43 +241,7 @@ FSlateIcon UK2Node_GetSpineAnimSpecFromGroup::GetIconAndTint(FLinearColor& OutCo
 	return Icon;
 }
 
-void UK2Node_GetSpineAnimSpecFromGroup::GetContextMenuActions(const FGraphNodeContextMenuBuilder& Context) const
-{
-	Super::GetContextMenuActions(Context);
 
-	if (!Context.bIsDebugging)
-	{
-		Context.MenuBuilder->BeginSection("K2NodeGetSequenceBinding", LOCTEXT("ThisNodeHeader", "This Node"));
-		if (!Context.Pin)
-		{
-			USpineAnimGroupAsset* GroupAsset = GetAnimGroupAsset();
-
-			auto SubMenu = [=](FMenuBuilder& SubMenuBuilder)
-			{
-				TArray<const UClass*> AllowedClasses({ USpineAnimGroupAsset::StaticClass() });
-
-				TSharedRef<SWidget> MenuContent = PropertyCustomizationHelpers::MakeAssetPickerWithMenu(
-					FAssetData(GroupAsset),
-					true /* bAllowClear */,
-					AllowedClasses,
-					PropertyCustomizationHelpers::GetNewAssetFactoriesForClasses(AllowedClasses),
-					FOnShouldFilterAsset(),
-					FOnAssetSelected::CreateUObject(this, &UK2Node_GetSpineAnimSpecFromGroup::SetAnimGroupAsset),
-					FSimpleDelegate());
-
-				SubMenuBuilder.AddWidget(MenuContent, FText::GetEmpty(), false);
-			};
-
-			Context.MenuBuilder->AddSubMenu(
-				LOCTEXT("SetSkeleton_Text", "Skeleton"),
-				LOCTEXT("SetSkeleton_ToolTip", "Sets the GroupAsset to get animation from"),
-				FNewMenuDelegate::CreateLambda(SubMenu)
-			);
-		}
-
-		Context.MenuBuilder->EndSection();
-	}
-}
 
 class FNodeHandlingFunctor* UK2Node_GetSpineAnimSpecFromGroup::CreateNodeHandler(class FKismetCompilerContext& CompilerContext) const
 {
@@ -289,7 +252,7 @@ void UK2Node_GetSpineAnimSpecFromGroup::PreloadRequiredAssets()
 {
 	PreloadObject(GetAnimGroupAsset());
 
-	EnsureFullyLoaded(GetAnimGroupAsset());
+	FSpineUtility::EnsureFullyLoaded(GetAnimGroupAsset());
 	
 	Super::PreloadRequiredAssets();
 }

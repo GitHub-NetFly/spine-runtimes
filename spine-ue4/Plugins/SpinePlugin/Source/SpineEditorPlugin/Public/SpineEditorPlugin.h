@@ -18,9 +18,15 @@ public:
 
 	virtual void StartupModule() override;
 
-
-
 	virtual void ShutdownModule() override;
+
+	void BindAssetImportCallback();
+
+	void RemoveAssetImportCallback();
+
+	void OnAtlasReimport(UObject* InObj);
+
+	void OnAtlasPostImport(class UFactory* InFactory, UObject* InObj);
 	
 
 	void RegisterCustomClassLayout(FName ClassName, FOnGetDetailCustomizationInstance DetailLayoutDelegate);

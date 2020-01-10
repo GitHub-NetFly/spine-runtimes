@@ -287,7 +287,7 @@ void FSpineAnimSpecLayout::OnSearchForReferences()
 		TArray<FAssetIdentifier> AssetIdentifiers;
 		AssetIdentifiers.Add(FAssetIdentifier(SourceSpineSkeletonAsset, RowName));
 
-		FEditorDelegates::OnOpenReferenceViewer.Broadcast(AssetIdentifiers);
+		FEditorDelegates::OnOpenReferenceViewer.Broadcast(AssetIdentifiers, FReferenceViewerParams());
 	}
 }
 

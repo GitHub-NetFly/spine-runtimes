@@ -16,7 +16,7 @@ namespace UnrealBuildTool.Rules
 			PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "Private"));
 			PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "../SpinePlugin/Public/spine-cpp/include"));
 
-
+            PrivateDependencyModuleNames.Add("ToolMenus");
 
             PublicDependencyModuleNames.AddRange(
                 new string[] {

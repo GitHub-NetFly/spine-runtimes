@@ -22,7 +22,7 @@
     },
     {
       "Name": "SpineEditorPlugin",
-      "Type": "Developer",
+      "Type": "UncookedOnly",
 	    "LoadingPhase": "PreDefault"
     }
   ],

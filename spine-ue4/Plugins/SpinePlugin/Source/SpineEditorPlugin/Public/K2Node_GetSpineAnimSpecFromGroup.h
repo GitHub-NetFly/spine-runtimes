@@ -13,6 +13,10 @@
 class USpineSkeletonDataAsset;
 class USpineAnimGroupAsset;
 
+class UEdGraphPin;
+class UToolMenu;
+class UGraphNodeContextMenuContext;
+
 UCLASS(MinimalAPI)
 class  UK2Node_GetSpineAnimSpecFromGroup : public UK2Node
 {
@@ -40,7 +44,8 @@ public:
 
 	FText GetGroupAssetName()const;
 
-	void EnsureFullyLoaded(UObject* Object);
+
+	virtual void GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const override;
 
 public:
 	virtual void ValidateNodeDuringCompilation(FCompilerResultsLog& MessageLog) const override;
@@ -49,7 +54,7 @@ public:
 	virtual FSlateIcon GetIconAndTint(FLinearColor& OutColor) const override;
 	virtual bool ShouldShowNodeProperties() const override { return true; }
 	virtual bool IsNodePure() const override { return true; }
-	virtual void GetContextMenuActions(const FGraphNodeContextMenuBuilder& Context) const override;
+
 	virtual class FNodeHandlingFunctor* CreateNodeHandler(class FKismetCompilerContext& CompilerContext) const override;
 	virtual void PreloadRequiredAssets() override;
 	virtual void GetMenuActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const override;

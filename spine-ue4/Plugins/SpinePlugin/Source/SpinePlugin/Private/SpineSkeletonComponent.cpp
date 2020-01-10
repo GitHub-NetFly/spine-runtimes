@@ -15,7 +15,7 @@
 
 using namespace spine;
 
-USpineSkeletonComponent::USpineSkeletonComponent ()
+USpineSkeletonComponent::USpineSkeletonComponent (const FObjectInitializer& ObjectInitializer):Super(ObjectInitializer)
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	bTickInEditor = true;
@@ -346,7 +346,7 @@ void USpineSkeletonComponent::InternalTick_SkeletonPose(float DeltaTime)
 
 void USpineSkeletonComponent::CheckState()
 {
-	bool bNeedsUpdate = (lastSkeletonAsset != SkeletonData);
+	bool bNeedsUpdate = (LastSkeletonAsset != SkeletonData);
 
 	if (!bNeedsUpdate)
 	{
@@ -385,7 +385,7 @@ void USpineSkeletonComponent::CheckState()
 		}
 
 
-		lastSkeletonAsset = SkeletonData;
+		LastSkeletonAsset = SkeletonData;
 	}
 }
 
@@ -395,13 +395,16 @@ void USpineSkeletonComponent::DisposeState ()
 	lastSkeletonData.Reset();
 }
 
+
+
 void USpineSkeletonComponent::InternalTick_Renderer()
 {
 	if (IsValid(SkeletonData) && IsValid(SkeletonData->RelatedAtlasAsset) &&
 		SkeletonData->RelatedAtlasAsset->GetAtlas().IsValid() &&
 		GetSkeleton().IsValid())
 	{
-		USpineAtlasAsset* AtlasAsset = SkeletonData->RelatedAtlasAsset;
+		USpineAtlasAsset* CurrentAtlasAsset = SkeletonData->RelatedAtlasAsset;
+		USpineAtlasAsset* LastAtlasAsset = IsValid(LastSkeletonAsset) ? LastSkeletonAsset->RelatedAtlasAsset : nullptr;
 
 		GetSkeleton()->getColor().set(Color.R, Color.G, Color.B, Color.A);
 
@@ -410,14 +413,14 @@ void USpineSkeletonComponent::InternalTick_Renderer()
 		pageToMultiplyBlendMaterial.Empty(6);
 		pageToScreenBlendMaterial.Empty(6);
 
-		if (atlasNormalBlendMaterials.Num() != AtlasAsset->GetAtlas()->getPages().Num())
+		if (LastAtlasAsset!= CurrentAtlasAsset|| atlasNormalBlendMaterials.Num() != CurrentAtlasAsset->GetAtlas()->getPages().Num())
 		{
 			atlasNormalBlendMaterials.Empty(6);
 			atlasAdditiveBlendMaterials.Empty(6);
 			atlasMultiplyBlendMaterials.Empty(6);
 			atlasScreenBlendMaterials.Empty(6);
 
-			for (const spine::AtlasPage& Page : AtlasAsset->GetAtlas()->getPages())
+			for (const spine::AtlasPage& Page : CurrentAtlasAsset->GetAtlas()->getPages())
 			{
 				UTexture2D* Texture = Page.GetRendererObject().Get();
 				ensure(IsValid(Texture));
@@ -445,9 +448,9 @@ void USpineSkeletonComponent::InternalTick_Renderer()
 		}
 		else
 		{
-			for (int32 i = 0; i < AtlasAsset->GetAtlas()->getPages().Num(); i++)
+			for (int32 i = 0; i < CurrentAtlasAsset->GetAtlas()->getPages().Num(); i++)
 			{
-				const spine::AtlasPage& PageRef = AtlasAsset->GetAtlas()->getPages()[i];
+				const spine::AtlasPage& PageRef = CurrentAtlasAsset->GetAtlas()->getPages()[i];
 
 				UTexture2D* texture = PageRef.GetRendererObject().Get();
 				UTexture* oldTexture = nullptr;
@@ -539,7 +542,8 @@ void USpineSkeletonComponent::UpdateMesh(TSharedRef<class spine::Skeleton> Skele
 	float depthOffset = 0;
 	unsigned short quadIndices[] = { 0, 1, 2, 0, 2, 3 };
 
-	for (int32 i = 0; i < GetSkeleton()->getSlots().Num(); ++i) {
+	const int32 SlotNum = GetSkeleton()->getSlots().Num();
+	for (int32 i = 0; i < SlotNum; ++i) {
 		Vector<float> &attachmentVertices = StaticSpineVector.worldVertices;
 		unsigned short* attachmentIndices = nullptr;
 		int numVertices;
@@ -557,8 +561,17 @@ void USpineSkeletonComponent::UpdateMesh(TSharedRef<class spine::Skeleton> Skele
 			continue;
 		}
 
-		if (!attachment) continue;
-		if (!attachment->getRTTI().isExactly(RegionAttachment::rtti) && !attachment->getRTTI().isExactly(MeshAttachment::rtti) && !attachment->getRTTI().isExactly(ClippingAttachment::rtti)) continue;
+		if (!attachment)
+		{
+			clipper.clipEnd(*slot);
+			continue;
+		}
+
+		if (!attachment->getRTTI().isExactly(RegionAttachment::rtti) && !attachment->getRTTI().isExactly(MeshAttachment::rtti) && !attachment->getRTTI().isExactly(ClippingAttachment::rtti))
+		{
+			clipper.clipEnd(*slot);
+			continue;
+		}
 
 		if (attachment->getRTTI().isExactly(RegionAttachment::rtti)) {
 			RegionAttachment* regionAttachment = (RegionAttachment*)attachment;
@@ -608,23 +621,43 @@ void USpineSkeletonComponent::UpdateMesh(TSharedRef<class spine::Skeleton> Skele
 
 		switch (slot->getData().getBlendMode()) {
 		case BlendMode_Normal:
-			if (!pageToNormalBlendMaterial.Contains(AtlasPage)) continue;
+			if (!pageToNormalBlendMaterial.Contains(AtlasPage))
+			{
+				clipper.clipEnd(*slot);
+				continue;
+			}
 			material = pageToNormalBlendMaterial[AtlasPage];
 			break;
 		case BlendMode_Additive:
-			if (!pageToAdditiveBlendMaterial.Contains(AtlasPage)) continue;
+			if (!pageToAdditiveBlendMaterial.Contains(AtlasPage))
+			{
+				clipper.clipEnd(*slot);
+				continue;
+			}
 			material = pageToAdditiveBlendMaterial[AtlasPage];
 			break;
 		case BlendMode_Multiply:
-			if (!pageToMultiplyBlendMaterial.Contains(AtlasPage)) continue;
+			if (!pageToMultiplyBlendMaterial.Contains(AtlasPage))
+			{
+				clipper.clipEnd(*slot);
+				continue;
+			}
 			material = pageToMultiplyBlendMaterial[AtlasPage];
 			break;
 		case BlendMode_Screen:
-			if (!pageToScreenBlendMaterial.Contains(AtlasPage)) continue;
+			if (!pageToScreenBlendMaterial.Contains(AtlasPage))
+			{
+				clipper.clipEnd(*slot);
+				continue;
+			}
 			material = pageToScreenBlendMaterial[AtlasPage];
 			break;
 		default:
-			if (!pageToNormalBlendMaterial.Contains(AtlasPage)) continue;
+			if (!pageToNormalBlendMaterial.Contains(AtlasPage))
+			{
+				clipper.clipEnd(*slot);
+				continue;
+			}
 			material = pageToNormalBlendMaterial[AtlasPage];
 		}
 
@@ -635,7 +668,11 @@ void USpineSkeletonComponent::UpdateMesh(TSharedRef<class spine::Skeleton> Skele
 			attachmentIndices = clipper.getClippedTriangles().buffer();
 			numIndices = clipper.getClippedTriangles().size();
 			attachmentUvs = clipper.getClippedUVs().buffer();
-			if (clipper.getClippedTriangles().size() == 0) continue;
+			if (clipper.getClippedTriangles().size() == 0)
+			{
+				clipper.clipEnd(*slot);
+				continue;
+			}
 		}
 
 		if (lastMaterial != material) {
@@ -674,6 +711,9 @@ void USpineSkeletonComponent::UpdateMesh(TSharedRef<class spine::Skeleton> Skele
 		clipper.clipEnd(*slot);
 	}
 
+
+	//UE_LOG(LogTemp, Warning, TEXT("depthOffset: %f"), depthOffset);
+
 	Flush(meshSection, vertices, indices, normals, uvs, colors, darkColors, lastMaterial);
 	clipper.clipEnd();
 }
@@ -695,10 +735,7 @@ void USpineSkeletonComponent::Flush(int &Idx, TArray<FVector> &Vertices, TArray<
 }
 
 
-void USpineSkeletonComponent::FinishDestroy () {
-	DisposeState();
-	Super::FinishDestroy();
-}
+
 
 FTransform USpineSkeletonComponent::GetSocketTransform(FName InSocketName, ERelativeTransformSpace TransformSpace /*= RTS_World*/) const
 {
@@ -904,6 +941,13 @@ bool USpineSkeletonComponent::CancelReplaceAttachment(const FReplaceAttachmentGr
 		// animation subclass need call SpineAnimState->apply(GetSkeleton()->AsShared().Get());
 	}
 	return bAnyReplaced;
+}
+
+void USpineSkeletonComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	DisposeState();
+
+	Super::EndPlay(EndPlayReason);
 }
 
 #undef LOCTEXT_NAMESPACE

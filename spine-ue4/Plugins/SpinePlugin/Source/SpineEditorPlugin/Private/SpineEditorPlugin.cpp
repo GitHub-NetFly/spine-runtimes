@@ -6,13 +6,14 @@
 #include "PropertyEditorModule.h"
 
 #include "SpineAnimationSpecLayout.h"
+#include"SpineAtlasAsset.h"
+#include "SpineSkeletonDataAsset.h"
 
-
+#include "Factories/Factory.h"
+#include "Editor.h"
 
 
 IMPLEMENT_MODULE(FSpineEditorPlugin, SpineEditorPlugin)
-
-
 
 void FSpineEditorPlugin::StartupModule()
 {
@@ -21,6 +22,21 @@ void FSpineEditorPlugin::StartupModule()
 	RegisterCustomPropertyTypeLayout("SpineAnimationSpec", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FSpineAnimSpecLayout::MakeInstance));
 
 	PropertyModule.NotifyCustomizationModuleChanged();
+
+	//暂时注释掉,因为Spine Atlas更新后,旧的Spine Skeleton调用RebuildCachedSkeletonData()会导致问题.
+	//应该只能在Spine Skeleton更新后,才可以调用RebuildCachedSkeletonData().
+
+	/*if (GIsEditor)
+	{
+		if (GEditor)
+		{
+			BindAssetImportCallback();
+		}
+		else
+		{
+			FCoreDelegates::OnPostEngineInit.AddRaw(this, &FSpineEditorPlugin::BindAssetImportCallback);
+		}
+	}*/
 }
 
 void FSpineEditorPlugin::ShutdownModule()
@@ -52,6 +68,67 @@ void FSpineEditorPlugin::ShutdownModule()
 		RegisteredPropertyTypes.Empty();
 
 		PropertyModule.NotifyCustomizationModuleChanged();
+	}
+
+	/*RemoveAssetImportCallback();
+	FCoreDelegates::OnPostEngineInit.RemoveAll(this);*/
+}
+
+
+
+void FSpineEditorPlugin::BindAssetImportCallback()
+{
+	check(GEditor);
+	GEditor->GetEditorSubsystem<UImportSubsystem>()->OnAssetReimport.AddRaw(this, &FSpineEditorPlugin::OnAtlasReimport);
+	GEditor->GetEditorSubsystem<UImportSubsystem>()->OnAssetPostImport.AddRaw(this, &FSpineEditorPlugin::OnAtlasPostImport);
+}
+
+void FSpineEditorPlugin::RemoveAssetImportCallback()
+{
+	if (GEditor)
+	{
+		GEditor->GetEditorSubsystem<UImportSubsystem>()->OnAssetReimport.RemoveAll(this);
+		GEditor->GetEditorSubsystem<UImportSubsystem>()->OnAssetPostImport.RemoveAll(this);
+	}
+}
+
+void FSpineEditorPlugin::OnAtlasReimport(UObject* InObj)
+{
+	if (IsValid(InObj) && InObj->IsA<USpineAtlasAsset>())
+	{
+		USpineAtlasAsset* ChangedAtlasAsset = CastChecked<USpineAtlasAsset>(InObj);
+
+		for (TObjectIterator<USpineSkeletonDataAsset> Itr; Itr; ++Itr)
+		{
+			USpineSkeletonDataAsset* SkeletonDataAsset = *Itr;
+			if (IsValid(SkeletonDataAsset) && !SkeletonDataAsset->HasAnyFlags(RF_ClassDefaultObject))
+			{
+				if (SkeletonDataAsset->RelatedAtlasAsset == ChangedAtlasAsset)
+				{
+					SkeletonDataAsset->RebuildCachedSkeletonData();
+				}
+			}
+		}
+	}
+}
+
+void FSpineEditorPlugin::OnAtlasPostImport(class UFactory* InFactory, UObject* InObj)
+{
+	if (IsValid(InObj) && InObj->IsA<USpineAtlasAsset>())
+	{
+		USpineAtlasAsset* ChangedAtlasAsset = CastChecked<USpineAtlasAsset>(InObj);
+
+		for (TObjectIterator<USpineSkeletonDataAsset> Itr; Itr; ++Itr)
+		{
+			USpineSkeletonDataAsset* SkeletonDataAsset = *Itr;
+			if (IsValid(SkeletonDataAsset) && !SkeletonDataAsset->HasAnyFlags(RF_ClassDefaultObject))
+			{
+				if (SkeletonDataAsset->RelatedAtlasAsset == ChangedAtlasAsset)
+				{
+					SkeletonDataAsset->RebuildCachedSkeletonData();
+				}
+			}
+		}
 	}
 }
 

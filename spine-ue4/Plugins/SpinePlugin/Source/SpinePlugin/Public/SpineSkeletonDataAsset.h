@@ -84,7 +84,7 @@ class SPINEPLUGIN_API USpineSkeletonDataAsset : public UObject
 
 public:
 	TSharedPtr<spine::SkeletonData> GetSpineSkeletonData()const;
-	TSharedPtr<spine::AnimationStateData> GetAnimationStateData() const;
+	TSharedPtr<spine::AnimationStateData> CreateAnimationStateData() const;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 		float DefaultMix = 0;
@@ -118,8 +118,7 @@ public:
 	
 	virtual void PostLoad() override;
 
-	static void EnsureFullyLoaded(UObject* Object);
-
+	void RebuildCachedSkeletonData();
 protected:
 	UPROPERTY()
 	TArray<uint8> rawData;	
@@ -133,7 +132,6 @@ protected:
 
 	
 	TSharedPtr<spine::SkeletonData> CachedSkeletonData;
-	TSharedPtr<spine::SkeletonData> BuildSkeletonData();
 
 	virtual void PostInitProperties() override;
 	virtual void Serialize(FArchive& Ar) override;
@@ -150,13 +148,6 @@ public:
 public:
 	void SetRawData(TArray<uint8> &Data);
 protected:
-
-	void BindEngineCallback();
-
-	bool RegisteredReimportCallback = false;
-
-	void OnAtlasReimport(UObject* InObj);
-	void OnAtlasPostImport(class UFactory* InFactory, UObject* InObj);
 
 	void LoadInfo();	
 	
