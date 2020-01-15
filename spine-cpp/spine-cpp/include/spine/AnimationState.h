@@ -429,7 +429,7 @@ namespace spine {
         Vector<Event*> _events;
         TSharedPtr<EventQueue> _queue;
 
-        Vector<int> _propertyIDs;
+        HashMap<int, bool> _propertyIDs;
         bool _animationsChanged;
 
 		FSpineAnimationStateCallbackDelegate _listener;
@@ -464,8 +464,6 @@ namespace spine {
         void computeHold(TSharedPtr<TrackEntry> entry);
 
 		void computeNotLast(TSharedPtr<TrackEntry> entry);
-
-        bool hasTimeline(TSharedPtr<TrackEntry> entry, int inId);
     };
 }
 

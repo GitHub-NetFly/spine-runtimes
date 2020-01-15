@@ -64,12 +64,14 @@ public:
 
 	void clearAllocations() {
 		_allocated.clear();
+		_usedMemory = 0;
 	}
 
 	virtual void *_alloc(int32 size, const char *file, int line) {
 		void *result = _extension->_alloc(size, file, line);
 		_allocated[result] = Allocation(result, size, file, line);
 		_allocations++;
+		_usedMemory += size;
 		return result;
 	}
 
@@ -77,14 +79,17 @@ public:
 		void *result = _extension->_calloc(size, file, line);
 		_allocated[result] = Allocation(result, size, file, line);
 		_allocations++;
+		_usedMemory += size;
 		return result;
 	}
 
 	virtual void *_realloc(void *ptr, int32 size, const char *file, int line) {
+		if (_allocated.count(ptr)) _usedMemory -= _allocated[ptr].size;
 		_allocated.erase(ptr);
 		void *result = _extension->_realloc(ptr, size, file, line);
 		_reallocations++;
 		_allocated[result] = Allocation(result, size, file, line);
+		_usedMemory += size;
 		return result;
 	}
 
@@ -92,6 +97,7 @@ public:
 		if (_allocated.count(mem)) {
 			_extension->_free(mem, file, line);
 			_frees++;
+			_usedMemory -= _allocated[mem].size;
 			_allocated.erase(mem);
 			return;
 		}
@@ -104,12 +110,16 @@ public:
 		return _extension->_readFile(path, length);
 	}
 
+	int32 getUserMemory() {
+		return _usedMemory;
+	}
 private:
 	SpineExtension* _extension;
 	std::map<void*, Allocation> _allocated;
 	int32 _allocations;
 	int32 _reallocations;
 	int32 _frees;
+	int32 _usedMemory;
 };
 }
 

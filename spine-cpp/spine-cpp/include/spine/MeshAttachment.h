@@ -90,6 +90,9 @@ namespace spine {
         
         bool getRegionRotate();
         void setRegionRotate(bool inValue);
+
+		int getRegionDegrees();
+		void setRegionDegrees(int inValue);
         
         float getRegionOffsetX();
         void setRegionOffsetX(float inValue);

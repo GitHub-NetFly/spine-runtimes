@@ -448,10 +448,10 @@ void Skeleton::update(float delta) {
 }
 
 void Skeleton::getBounds(float &outX, float &outY, float &outWidth, float &outHeight, Vector<float> &outVertexBuffer) {
-	float minX = std::numeric_limits<float>::max();
-	float minY = std::numeric_limits<float>::max();
-	float maxX = std::numeric_limits<float>::min();
-	float maxY = std::numeric_limits<float>::min();
+	float minX = BIG_NUMBER;
+	float minY = BIG_NUMBER;
+	float maxX = SMALL_NUMBER;
+	float maxY = SMALL_NUMBER;
 
 	for (size_t i = 0; i < _drawOrder.Num(); ++i) {
 		TSharedPtr<Slot> slot = _drawOrder[i];

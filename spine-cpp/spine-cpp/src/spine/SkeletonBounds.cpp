@@ -67,7 +67,7 @@ void SkeletonBounds::update(Skeleton &skeleton, bool updateAabb)
 		BoundingBoxAttachment *boundingBox = static_cast<BoundingBoxAttachment *>(attachment);
 		_boundingBoxes.add(boundingBox);
 
-		Polygon *polygonP = NULL;
+		spine::Polygon *polygonP = NULL;
 		int32 poolCount = _polygonPool.size();
 		if (poolCount > 0) {
 			polygonP = _polygonPool[poolCount - 1];
@@ -91,10 +91,10 @@ void SkeletonBounds::update(Skeleton &skeleton, bool updateAabb)
 	if (updateAabb) {
 		aabbCompute();
 	} else {
-		_minX = std::numeric_limits<float>::min();
-		_minY = std::numeric_limits<float>::min();
-		_maxX = std::numeric_limits<float>::max();
-		_maxY = std::numeric_limits<float>::max();
+		_minX = SMALL_NUMBER;
+		_minY = SMALL_NUMBER;
+		_maxX = BIG_NUMBER;
+		_maxY = BIG_NUMBER;
 	}
 }
 
@@ -137,7 +137,7 @@ bool SkeletonBounds::aabbIntersectsSkeleton(SkeletonBounds bounds) {
 	return _minX < bounds._maxX && _maxX > bounds._minX && _minY < bounds._maxY && _maxY > bounds._minY;
 }
 
-bool SkeletonBounds::containsPoint(Polygon *polygon, float x, float y) {
+bool SkeletonBounds::containsPoint(spine::Polygon *polygon, float x, float y) {
 	Vector<float> &vertices = polygon->_vertices;
 	int nn = polygon->_count;
 
@@ -176,7 +176,7 @@ BoundingBoxAttachment *SkeletonBounds::intersectsSegment(float x1, float y1, flo
 	return NULL;
 }
 
-bool SkeletonBounds::intersectsSegment(Polygon *polygon, float x1, float y1, float x2, float y2) {
+bool SkeletonBounds::intersectsSegment(spine::Polygon *polygon, float x1, float y1, float x2, float y2) {
 	Vector<float> &vertices = polygon->_vertices;
 	int32 nn = polygon->_count;
 
@@ -217,13 +217,13 @@ float SkeletonBounds::getHeight() {
 }
 
 void SkeletonBounds::aabbCompute() {
-	float minX = std::numeric_limits<float>::min();
-	float minY = std::numeric_limits<float>::min();
-	float maxX = std::numeric_limits<float>::max();
-	float maxY = std::numeric_limits<float>::max();
+	float minX = SMALL_NUMBER;
+	float minY = SMALL_NUMBER;
+	float maxX = BIG_NUMBER;
+	float maxY = BIG_NUMBER;
 
 	for (int32 i = 0, n = _polygons.size(); i < n; ++i) {
-		Polygon *polygon = _polygons[i];
+		spine::Polygon *polygon = _polygons[i];
 		Vector<float> &vertices = polygon->_vertices;
 		for (int ii = 0, nn = polygon->_count; ii < nn; ii += 2) {
 			float x = vertices[ii];

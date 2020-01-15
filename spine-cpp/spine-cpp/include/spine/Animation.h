@@ -32,6 +32,7 @@
 #define Spine_Animation_h
 
 #include <spine/Vector.h>
+#include <spine/HashMap.h>
 #include <spine/MixBlend.h>
 #include <spine/MixDirection.h>
 #include <spine/SpineObject.h>
@@ -95,6 +96,8 @@ public:
 
 	Vector<Timeline *> &getTimelines();
 
+	bool hasTimeline(int id);
+
 	float getDuration();
 
 	void setDuration(float inValue);
@@ -103,6 +106,7 @@ public:
 
 private:
 	Vector<Timeline *> _timelines;
+	HashMap<int, bool> _timelineIds;
 	float _duration;
 	String _name;
 

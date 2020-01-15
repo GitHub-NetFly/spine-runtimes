@@ -35,7 +35,6 @@
 #include <spine/SpineObject.h>
 #include <spine/Color.h>
 
-#include <string>
 
 namespace spine {
 class SlotData;

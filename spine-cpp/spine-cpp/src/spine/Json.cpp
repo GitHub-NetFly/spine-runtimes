@@ -125,17 +125,28 @@ Json::Json(const char *value) :
 }
 
 Json::~Json() {
-	delete _child;
+	
+	spine::Json* curr = nullptr;
+	spine::Json* next = _child;
 
-	if (_valueString) {
+	do
+	{
+		curr = next;
+		if (curr)
+		{
+			next = curr->_next;
+		}
+	} while (next);
+
+	if (_valueString)
+	{
 		SpineExtension::free(_valueString, __FILE__, __LINE__);
 	}
 
-	if (_name) {
+	if (_name)
+	{
 		SpineExtension::free(_name, __FILE__, __LINE__);
 	}
-
-	delete _next;
 }
 
 const char *Json::skip(const char *inValue) {

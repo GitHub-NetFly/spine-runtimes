@@ -43,6 +43,7 @@
 #include <spine/DrawOrderTimeline.h>
 #include <spine/EventTimeline.h>
 
+
 using namespace spine;
 
 //void dummyOnAnimationEventFunc(AnimationState *state, spine::EventType type, TrackEntry *entry, Event *event = NULL) {
@@ -238,8 +239,9 @@ void EventQueue::event(TSharedRef<TrackEntry> entry, Event *event)
 }
 
 /// Raises all events in the queue and drains the queue.
-void EventQueue::drain() {
-	if (_drainDisabled) 
+void EventQueue::drain()
+{
+	if (_drainDisabled)
 	{
 		return;
 	}
@@ -259,46 +261,36 @@ void EventQueue::drain() {
 
 		TSharedRef<TrackEntry> trackEntry = queueEntry._entry;
 
-		auto Func_End = [&]
+		auto ProcessNormal = [&]
 		{
 			trackEntry->_listener.ExecuteIfBound(&state, queueEntry._type, trackEntry, queueEntry._event);
 			state._listener.ExecuteIfBound(&state, queueEntry._type, trackEntry, queueEntry._event);
 		};
 
-		auto Func_Dispose = [&]
+		auto ProcessDispose = [&]
 		{
 			trackEntry->_listener.ExecuteIfBound(&state, EventType_Dispose, trackEntry, queueEntry._event);
 			state._listener.ExecuteIfBound(&state, EventType_Dispose, trackEntry, queueEntry._event);
-			_state.getTracks().Remove(queueEntry._entry);
+			state.getTracks().Remove(queueEntry._entry);
 		};
+
+
 
 		switch (queueEntry._type)
 		{
 		case EventType_Start:
-			trackEntry->_listener.ExecuteIfBound(&state, queueEntry._type, trackEntry, queueEntry._event);
-			state._listener.ExecuteIfBound(&state, queueEntry._type, trackEntry, queueEntry._event);
-			break;
 		case EventType_Interrupt:
-			trackEntry->_listener.ExecuteIfBound(&state, queueEntry._type, trackEntry, queueEntry._event);
-			state._listener.ExecuteIfBound(&state, queueEntry._type, trackEntry, queueEntry._event);
-
-			break;
 		case EventType_Complete:
-			trackEntry->_listener.ExecuteIfBound(&state, queueEntry._type, trackEntry, queueEntry._event);
-			state._listener.ExecuteIfBound(&state, queueEntry._type, trackEntry, queueEntry._event);
-
+		case EventType_Event:
+			ProcessNormal();
 			break;
-		case EventType_End:
-
-			Func_End();
-			Func_Dispose();
+		case EventType_End:  //他这个实现很有问题,Dispose的event只会在DisposeNext的时候,也就是用来销毁通过AddAnim添加
+			ProcessNormal();  //的AnimTrack的时候使用,只能吧销毁用的Dispose紧跟在End Event之后才行.
+			ProcessDispose();
 			break;
 		case EventType_Dispose:
-			Func_Dispose();
-			break;
-		case EventType_Event:
-			trackEntry->_listener.ExecuteIfBound(&state, queueEntry._type, trackEntry, queueEntry._event);
-			state._listener.ExecuteIfBound(&state, queueEntry._type, trackEntry, queueEntry._event);
+			ProcessDispose();
+			
 			break;
 		default:
 			checkNoEntry();
@@ -402,7 +394,7 @@ void AnimationState::update(float delta) {
 			float nextTime = current._trackLast - next->_delay;
 			if (nextTime >= 0) {
 				next->_delay = 0;
-				next->_trackTime = current._timeScale == 0 ? 0 : (nextTime / current._timeScale + delta) * next->_timeScale;
+				next->_trackTime += current._timeScale == 0 ? 0 : (nextTime / current._timeScale + delta) * next->_timeScale;
 				current._trackTime += currentDelta;
 				setCurrent(i, next, true);
 				while (next->_mixingFrom != NULL) 
@@ -715,11 +707,14 @@ void AnimationState::setListener(FSpineAnimationStateCallbackDelegate inValue) {
 }
 
 
-void AnimationState::disableQueue() {
+void AnimationState::disableQueue() 
+{
 	_queue->_drainDisabled = true;
 }
-void AnimationState::enableQueue() {
+void AnimationState::enableQueue()
+{
 	_queue->_drainDisabled = false;
+	_queue->drain();
 }
 
 TSharedRef<Animation> AnimationState::getEmptyAnimation()
@@ -901,12 +896,12 @@ float AnimationState::applyMixingFrom(TSharedPtr<TrackEntry> to, Skeleton &skele
 			float alpha;
 			switch (timelineMode[i] & (Spine_NotLast - 1)) {
 				case Spine_Subsequent:
+					timelineBlend = blend;
 					if (!attachments && (timeline->getRTTI().isExactly(AttachmentTimeline::rtti))) {
 						if ((timelineMode[i] & Spine_NotLast) == Spine_NotLast) continue;
-						blend = MixBlend_Setup;
+						timelineBlend = MixBlend_Setup;
 					}
 					if (!drawOrder && (timeline->getRTTI().isExactly(DrawOrderTimeline::rtti))) continue;
-					timelineBlend = blend;
 					alpha = alphaMix;
 					break;
 				case Spine_First:
@@ -1059,7 +1054,8 @@ TSharedRef<spine::TrackEntry> AnimationState::newTrackEntry(int32 trackIndex, TS
 	entry._trackTime = 0;
 	entry._trackLast = -1;
 	entry._nextTrackLast = -1; // nextTrackLast == -1 signifies a TrackEntry that wasn't applied yet.
-	entry._trackEnd = BIG_NUMBER; // loop ? float.MaxValue : animation.Duration;
+	//entry._trackEnd =  loop ? BIG_NUMBER : animation->getDuration();
+	entry._trackEnd = FLT_MAX; 
 	entry._timeScale = 1;
 
 	entry._alpha = 1;
@@ -1138,7 +1134,7 @@ void AnimationState::computeHold(TSharedPtr<TrackEntry> entry) {
 		for (int32 i = 0; i < timelinesCount; i++) 
 		{
 			int id = timelines[i]->getPropertyId();
-			if (!_propertyIDs.contains(id)) _propertyIDs.add(id);
+			if(!_propertyIDs.containsKey(id)) _propertyIDs.put(id, true);
 			timelineMode[i] = Spine_Hold;
 		}
 		return;
@@ -1150,18 +1146,18 @@ void AnimationState::computeHold(TSharedPtr<TrackEntry> entry) {
 	for (; i < timelinesCount; ++i) {
 		Timeline *timeline = timelines[i];
 		int id = timeline->getPropertyId();
-		if (_propertyIDs.contains(id)) {
+		if (_propertyIDs.containsKey(id)) {
 			timelineMode[i] = Spine_Subsequent;
 		} else {
-			_propertyIDs.add(id);
+			_propertyIDs.put(id, true);
 
 			if (!to.IsValid() || timeline->getRTTI().isExactly(AttachmentTimeline::rtti) ||
 					timeline->getRTTI().isExactly(DrawOrderTimeline::rtti) ||
-					timeline->getRTTI().isExactly(EventTimeline::rtti) || !hasTimeline(to, id)) {
+					timeline->getRTTI().isExactly(EventTimeline::rtti) || !to->_animation->hasTimeline(id)) {
 				timelineMode[i] = Spine_First;
 			} else {
 				for (TWeakPtr<TrackEntry> next = to->_mixingTo; next.IsValid(); next = next.Pin() ->_mixingTo) {
-					if (hasTimeline(next.Pin(), id)) continue;
+					if(next.Pin()->_animation->hasTimeline(id)) continue;
 					if (entry->_mixDuration > 0) {
 						timelineMode[i] = Spine_HoldMix;
 						timelineHoldMix[i] = entry;
@@ -1184,21 +1180,11 @@ void AnimationState::computeNotLast(TSharedPtr<TrackEntry> entry) {
 	for (size_t i = 0; i < timelinesCount; i++) {
 		if (timelines[i]->getRTTI().isExactly(AttachmentTimeline::rtti)) {
 			AttachmentTimeline *timeline = static_cast<AttachmentTimeline *>(timelines[i]);
-			if (!_propertyIDs.contains(timeline->getSlotIndex())) {
-				_propertyIDs.add(timeline->getSlotIndex());
+			if (!_propertyIDs.containsKey(timeline->getSlotIndex())) {
+				_propertyIDs.put(timeline->getSlotIndex(), true);
 			} else {
 				timelineMode[i] |= Spine_NotLast;
 			}
 		}
 	}
-}
-
-bool AnimationState::hasTimeline(TSharedPtr<TrackEntry> entry, int inId) {
-	Vector<Timeline *> &timelines = entry->_animation->_timelines;
-	for (int32 i = 0, n = timelines.size(); i < n; ++i) {
-		if (timelines[i]->getPropertyId() == inId) {
-			return true;
-		}
-	}
-	return false;
 }
