@@ -19,6 +19,9 @@ namespace spine
 	class AnimationState;
 	class AnimationStateData;
 	class Atlas;
+	class Event;
+	class TrackEntry;
+	enum EventType;
 	class AtlasPage;
 	class AtlasRegion;
 	class Attachment;
@@ -368,10 +371,156 @@ public:
 	bool IsFinished() const { return TimeRemaining <= 0 && !IsLooping(); }
 };
 
+USTRUCT(BlueprintType, Category = "Spine")
+struct SPINEPLUGIN_API FSpineEvent
+{
+	GENERATED_BODY();
 
+public:
+	void SetEvent(const spine::Event& InEvent);
+
+	UPROPERTY(BlueprintReadOnly)
+		FString Name;
+
+	UPROPERTY(BlueprintReadOnly)
+		FString StringValue;
+
+	UPROPERTY(BlueprintReadOnly)
+		int IntValue;
+
+	UPROPERTY(BlueprintReadOnly)
+		float FloatValue;
+
+	UPROPERTY(BlueprintReadOnly)
+		float Time;
+};
 
 
 struct SPINEPLUGIN_API FSpineUtility
 {
 	static void EnsureFullyLoaded(UObject* Object);
 };
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSpineAnimationStartDelegate, class UTrackEntry*, entry);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FSpineAnimationEventDelegate, class UTrackEntry*, entry,FSpineEvent, evt);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSpineAnimationInterruptDelegate, class UTrackEntry*, entry);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSpineAnimationCompleteDelegate, class UTrackEntry*, entry);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSpineAnimationEndDelegate, class UTrackEntry*, entry);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSpineAnimationDisposeDelegate, class UTrackEntry*, entry);
+
+UCLASS(ClassGroup = (Spine), BlueprintType, NotBlueprintable)
+class SPINEPLUGIN_API UTrackEntry : public UObject {
+	GENERATED_BODY()
+
+public:
+
+	void SetTrackEntry(TSharedPtr<spine::TrackEntry> trackEntry);
+	TSharedPtr<spine::TrackEntry> GetTrackEntry() { return entry; }
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		int GetTrackIndex();
+
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
+		bool GetLoop();
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetLoop(bool loop);
+
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
+		float GetEventThreshold();
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetEventThreshold(float eventThreshold);
+
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
+		float GetAttachmentThreshold();
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetAttachmentThreshold(float attachmentThreshold);
+
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
+		float GetDrawOrderThreshold();
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetDrawOrderThreshold(float drawOrderThreshold);
+
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
+		float GetAnimationStart();
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetAnimationStart(float animationStart);
+
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
+		float GetAnimationEnd();
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetAnimationEnd(float animationEnd);
+
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
+		float GetAnimationLast();
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetAnimationLast(float animationLast);
+
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
+		float GetDelay();
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetDelay(float delay);
+
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
+		float GetTrackTime();
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetTrackTime(float trackTime);
+
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
+		float GetTrackEnd();
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetTrackEnd(float trackEnd);
+
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
+		float GetTimeScale();
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetTimeScale(float timeScale);
+
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
+		float GetAlpha();
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetAlpha(float alpha);
+
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
+		float GetMixTime();
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetMixTime(float mixTime);
+
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
+		float GetMixDuration();
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		void SetMixDuration(float mixDuration);
+
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
+		FString GetAnimationName();
+
+	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
+		float GetAnimationDuration();
+
+	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
+		bool IsValidAnimation() { return entry.IsValid(); }
+
+	UPROPERTY(BlueprintAssignable, Category = "Components|Spine|TrackEntry")
+		FSpineAnimationStartDelegate AnimationStart;
+
+	UPROPERTY(BlueprintAssignable, Category = "Components|Spine|TrackEntry")
+		FSpineAnimationInterruptDelegate AnimationInterrupt;
+
+	UPROPERTY(BlueprintAssignable, Category = "Components|Spine|TrackEntry")
+		FSpineAnimationEventDelegate AnimationEvent;
+
+	UPROPERTY(BlueprintAssignable, Category = "Components|Spine|TrackEntry")
+		FSpineAnimationCompleteDelegate AnimationComplete;
+
+	UPROPERTY(BlueprintAssignable, Category = "Components|Spine|TrackEntry")
+		FSpineAnimationEndDelegate AnimationEnd;
+
+	UPROPERTY(BlueprintAssignable, Category = "Components|Spine|TrackEntry")
+		FSpineAnimationDisposeDelegate AnimationDispose;
+
+protected:
+	TSharedPtr<spine::TrackEntry> entry;
+};
+

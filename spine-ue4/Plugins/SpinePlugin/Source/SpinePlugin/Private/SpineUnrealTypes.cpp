@@ -6,12 +6,14 @@
 #include"SpineAtlasAsset.h"
 #include "SpineSkeletonDataAsset.h"
 #include "spine/spine.h"
-
+#include "SpinePlugin.h"
 #include "Curves/CurveFloat.h"
 #include "Curves/CurveLinearColor.h"
 #include "Curves/CurveVector.h"
 
 #include "UObject/LinkerLoad.h"
+
+#include "Materials/MaterialInstanceDynamic.h"
 
 TSharedPtr<spine::Attachment> FReplaceSkinAttachmentDesc::GenerateCopyAttachmentWithNewAtlasRegionIn(
 	spine::Skeleton& InSkeleton, 
@@ -331,5 +333,187 @@ void FSpineUtility::EnsureFullyLoaded(UObject* Object)
 			//	if (Reference->IsA<UMovieSceneSequence>() || Reference->IsA<UMovieScene>() || Reference->IsA<UMovieSceneTrack>() || Reference->IsA<UMovieSceneSection>())
 
 		}
+	}
+}
+
+
+
+void UTrackEntry::SetTrackEntry(TSharedPtr<spine::TrackEntry> trackEntry)
+{
+	this->entry = trackEntry;
+	if (entry.IsValid())
+	{
+		entry->SetRendererObject(this);
+	}
+}
+
+int UTrackEntry::GetTrackIndex()
+{
+	return entry.IsValid() ? entry->getTrackIndex() : 0;
+}
+
+bool UTrackEntry::GetLoop()
+{
+	return entry.IsValid() ? entry->getLoop() : false;
+}
+
+void UTrackEntry::SetLoop(bool loop)
+{
+	if (entry.IsValid()) entry->setLoop(loop);
+}
+
+float UTrackEntry::GetEventThreshold()
+{
+	return entry.IsValid() ? entry->getEventThreshold() : 0;
+}
+
+void UTrackEntry::SetEventThreshold(float eventThreshold)
+{
+	if (entry.IsValid()) entry->setEventThreshold(eventThreshold);
+}
+
+float UTrackEntry::GetAttachmentThreshold()
+{
+	return entry.IsValid() ? entry->getAttachmentThreshold() : 0;
+}
+
+void UTrackEntry::SetAttachmentThreshold(float attachmentThreshold)
+{
+	if (entry.IsValid()) entry->setAttachmentThreshold(attachmentThreshold);
+}
+
+float UTrackEntry::GetDrawOrderThreshold()
+{
+	return entry.IsValid() ? entry->getDrawOrderThreshold() : 0;
+}
+
+void UTrackEntry::SetDrawOrderThreshold(float drawOrderThreshold)
+{
+	if (entry.IsValid()) entry->setDrawOrderThreshold(drawOrderThreshold);
+}
+
+float UTrackEntry::GetAnimationStart()
+{
+	return entry.IsValid() ? entry->getAnimationStart() : 0;
+}
+
+void UTrackEntry::SetAnimationStart(float animationStart)
+{
+	if (entry.IsValid()) entry->setAnimationStart(animationStart);
+}
+
+float UTrackEntry::GetAnimationEnd()
+{
+	return entry.IsValid() ? entry->getAnimationEnd() : 0;
+}
+
+void UTrackEntry::SetAnimationEnd(float animationEnd)
+{
+	if (entry.IsValid()) entry->setAnimationEnd(animationEnd);
+}
+
+float UTrackEntry::GetAnimationLast()
+{
+	return entry.IsValid() ? entry->getAnimationLast() : 0;
+}
+
+void UTrackEntry::SetAnimationLast(float animationLast)
+{
+	if (entry.IsValid()) entry->setAnimationLast(animationLast);
+}
+
+float UTrackEntry::GetDelay()
+{
+	return entry.IsValid() ? entry->getDelay() : 0;
+}
+
+void UTrackEntry::SetDelay(float delay)
+{
+	if (entry.IsValid()) entry->setDelay(delay);
+}
+
+float UTrackEntry::GetTrackTime()
+{
+	return entry.IsValid() ? entry->getTrackTime() : 0;
+}
+
+void UTrackEntry::SetTrackTime(float trackTime)
+{
+	if (entry.IsValid()) entry->setTrackTime(trackTime);
+}
+
+float UTrackEntry::GetTrackEnd()
+{
+	return entry.IsValid() ? entry->getTrackEnd() : 0;
+}
+
+void UTrackEntry::SetTrackEnd(float trackEnd)
+{
+	if (entry.IsValid()) entry->setTrackEnd(trackEnd);
+}
+
+float UTrackEntry::GetTimeScale()
+{
+	return entry.IsValid() ? entry->getTimeScale() : 0;
+}
+
+void UTrackEntry::SetTimeScale(float timeScale)
+{
+	if (entry.IsValid()) entry->setTimeScale(FMath::Max(SMALL_NUMBER, timeScale));
+}
+
+float UTrackEntry::GetAlpha()
+{
+	return entry.IsValid() ? entry->getAlpha() : 0;
+}
+
+void UTrackEntry::SetAlpha(float alpha)
+{
+	if (entry.IsValid()) entry->setAlpha(alpha);
+}
+
+float UTrackEntry::GetMixTime()
+{
+	return entry.IsValid() ? entry->getMixTime() : 0;
+}
+
+void UTrackEntry::SetMixTime(float mixTime)
+{
+	if (entry.IsValid()) entry->setMixTime(mixTime);
+}
+
+float UTrackEntry::GetMixDuration()
+{
+	return entry ? entry->getMixDuration() : 0;
+}
+
+void UTrackEntry::SetMixDuration(float mixDuration)
+{
+	if (entry.IsValid()) entry->setMixDuration(mixDuration);
+}
+
+FString UTrackEntry::GetAnimationName()
+{
+	if (entry.IsValid())
+	{
+		check(entry->getAnimation());
+		return entry->getAnimation()->getName().buffer();
+	}
+	else
+	{
+		return FString();
+	}
+}
+
+float UTrackEntry::GetAnimationDuration()
+{
+	if (entry.IsValid())
+	{
+		check(entry->getAnimation());
+		return entry->getAnimation()->getDuration();
+	}
+	else
+	{
+		return 0;
 	}
 }

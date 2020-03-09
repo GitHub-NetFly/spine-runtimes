@@ -2,7 +2,7 @@
 
 #pragma once
 #include "CoreMinimal.h"
-#include "ModuleManager.h"
+#include "Modules/ModuleManager.h"
 #include "PropertyEditorDelegates.h"
 
 class FSpineEditorPlugin : public IModuleInterface {

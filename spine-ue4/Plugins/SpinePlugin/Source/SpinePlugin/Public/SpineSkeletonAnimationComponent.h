@@ -4,190 +4,34 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "SpineSkeletonComponent.h"
-
+#include "ProceduralMeshComponent.h"
+#include <spine/Atlas.h>
 #include "SpineAnimationGroupDataAsset.h"
 #include "SpineAnimNotify.h"
 #include "GameplayTagAssetInterface.h"
 #include "AbilitySystemInterface.h"
 #include "AbilitySystemComponent.h"
+#include "SpineUnrealTypes.h"
 
 #include "SpineSkeletonAnimationComponent.generated.h"
 
-namespace spine
-{
-	class Skeleton;
-	class SkeletonData;
-	class AnimationState;
-	class AnimationStateData;
-	class Atlas;
-	class Event;
-	class TrackEntry;
-	enum EventType;
-}
 
-class USpineSkeletonComponent;
 class USpineAtlasAsset;
 class USpineSkeletonDataAsset;
 class USpineSkeletonAnimationComponent;
-
-USTRUCT(BlueprintType, Category="Spine")
-struct SPINEPLUGIN_API FSpineEvent 
-{
-	GENERATED_BODY();
-
-public:
-	void SetEvent(const spine::Event& InEvent);
-	
-
-	UPROPERTY(BlueprintReadonly)
-	FString Name;
-
-	UPROPERTY(BlueprintReadOnly)
-	FString StringValue;
-
-	UPROPERTY(BlueprintReadOnly)
-	int IntValue;
-
-	UPROPERTY(BlueprintReadOnly)
-	float FloatValue;
-
-	UPROPERTY(BlueprintReadOnly)
-	float Time;
-};
-
 class UTrackEntry;
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSpineAnimationStartDelegate, UTrackEntry*, entry);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FSpineAnimationEventDelegate, UTrackEntry*, entry, FSpineEvent, evt);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSpineAnimationInterruptDelegate, UTrackEntry*, entry);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSpineAnimationCompleteDelegate, UTrackEntry*, entry);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSpineAnimationEndDelegate, UTrackEntry*, entry);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSpineAnimationDisposeDelegate, UTrackEntry*, entry);
+
 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSpineAnimationStateMachineDelegate);
 
-
-UCLASS(ClassGroup=(Spine),BlueprintType, NotBlueprintable)
-class SPINEPLUGIN_API UTrackEntry: public UObject {
-	GENERATED_BODY ()
-
-public:
-
-	void SetTrackEntry (TSharedPtr<spine::TrackEntry> trackEntry);
-	TSharedPtr<spine::TrackEntry> GetTrackEntry() { return entry; }
-	
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
-	int GetTrackIndex();
-
-	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
-		bool GetLoop();
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
-		void SetLoop(bool loop);
-	
-	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
-		float GetEventThreshold();
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
-		void SetEventThreshold(float eventThreshold);
-
-	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
-		float GetAttachmentThreshold();
-
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
-		void SetAttachmentThreshold(float attachmentThreshold);
-
-	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
-		float GetDrawOrderThreshold();
-
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
-		void SetDrawOrderThreshold(float drawOrderThreshold);
-
-	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
-		float GetAnimationStart();
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
-		void SetAnimationStart(float animationStart);
-
-	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
-		float GetAnimationEnd();
-
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
-		void SetAnimationEnd(float animationEnd);
-
-	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
-		float GetAnimationLast();
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
-		void SetAnimationLast(float animationLast);
-
-	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
-		float GetDelay();
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
-		void SetDelay(float delay);
-
-	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
-		float GetTrackTime();
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
-		void SetTrackTime(float trackTime);
-
-	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
-		float GetTrackEnd();
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
-		void SetTrackEnd(float trackEnd);
-
-	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
-		float GetTimeScale();
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
-		void SetTimeScale(float timeScale);
-
-	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
-		float GetAlpha();
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
-		void SetAlpha(float alpha);
-
-	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
-		float GetMixTime();
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
-		void SetMixTime(float mixTime);
-
-	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
-		float GetMixDuration();
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
-		void SetMixDuration(float mixDuration);
-
-	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
-		FString GetAnimationName();
-
-	UFUNCTION(BlueprintCallable, Category = "Components|Spine|TrackEntry")
-		float GetAnimationDuration();
-
-	UFUNCTION(BlueprintPure, Category = "Components|Spine|TrackEntry")
-	bool IsValidAnimation() { return entry.IsValid(); }
-
-	UPROPERTY(BlueprintAssignable, Category = "Components|Spine|TrackEntry")
-	FSpineAnimationStartDelegate AnimationStart;
-
-	UPROPERTY(BlueprintAssignable, Category = "Components|Spine|TrackEntry")
-	FSpineAnimationInterruptDelegate AnimationInterrupt;
-
-	UPROPERTY(BlueprintAssignable, Category = "Components|Spine|TrackEntry")
-	FSpineAnimationEventDelegate AnimationEvent;
-
-	UPROPERTY(BlueprintAssignable, Category = "Components|Spine|TrackEntry")
-	FSpineAnimationCompleteDelegate AnimationComplete;
-
-	UPROPERTY(BlueprintAssignable, Category = "Components|Spine|TrackEntry")
-	FSpineAnimationEndDelegate AnimationEnd;
-
-	UPROPERTY(BlueprintAssignable, Category = "Components|Spine|TrackEntry")
-	FSpineAnimationDisposeDelegate AnimationDispose;
-
-protected:
-	TSharedPtr<spine::TrackEntry> entry;
-};
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSpineSkinUpdatedDelegateSignature, FString, SkinName);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSpineSkeletonUpdatedDelegateSignature);
 
 class USpineAtlasAsset;
 
 UCLASS(ClassGroup=(Spine), hidecategories = (ProceduralMesh,Physics,Collision), meta=(BlueprintSpawnableComponent))
-class SPINEPLUGIN_API USpineSkeletonAnimationComponent: public USpineSkeletonComponent {
+class SPINEPLUGIN_API USpineSkeletonAnimationComponent: public UProceduralMeshComponent {
 	GENERATED_BODY()
 
 public:
@@ -305,15 +149,11 @@ public:
 #endif
 
 
-	virtual void CheckState () override;
-	virtual void InternalTick_SkeletonPose(float DeltaTime) override;
-	virtual void DisposeState () override;
+	virtual bool ApplyReplaceAttachment(const FReplaceAttachmentGroup& ReplacementGroup) ;
 
-	virtual bool ApplyReplaceAttachment(const FReplaceAttachmentGroup& ReplacementGroup) override;
+	virtual bool CancelReplaceAttachment(const FReplaceAttachmentGroup& ReplacementGroup) ;
 
-	virtual bool CancelReplaceAttachment(const FReplaceAttachmentGroup& ReplacementGroup) override;
-
-	virtual bool SetSkin(FString SkinName) override;
+	virtual bool SetSkin(FString SkinName) ;
 
 	void StopAnimationStateMachine();
 
@@ -322,8 +162,6 @@ public:
 
 	virtual void OnRegister() override;
 
-
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 protected:
 	TSharedPtr<spine::AnimationState> SpineAnimState;
@@ -406,5 +244,171 @@ private:
 	TArray<FPendingTriggerFinishCallback> InTickPendingTriggerFinishCallbackArray;
 
 	TMap<FParamID, FParamCurrentData>  InTickPendingZeroedFinishState;
+
+public:
+		UPROPERTY(Transient, DuplicateTransient)
+			USpineSkeletonDataAsset* SkeletonData;
+
+		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Spine)
+			bool bForceRefresh;
+
+		TSharedPtr<spine::Skeleton> GetSkeleton()const { return CurrentSpineSkeleton; };
+
+		UFUNCTION(BlueprintPure, Category = "Components|Spine|Skeleton")
+			void GetSkins(TArray<FString> &Skins)const;
+
+		UPROPERTY(BlueprintAssignable)
+			FOnSpineSkinUpdatedDelegateSignature OnSpineSkinUpdated;
+
+		UFUNCTION(BlueprintCallable, Category = "Components|Spine|Skeleton")
+			void SetSkeletonAsset(USpineSkeletonDataAsset* InSkeletonAsset);
+
+		UFUNCTION(BlueprintCallable, Category = "Components|Spine|Skeleton")
+			USpineSkeletonDataAsset* GetSkeletonAsset()const { return SkeletonData; }
+
+		UPROPERTY(BlueprintAssignable)
+			FOnSpineSkeletonUpdatedDelegateSignature OnSpineSkeletonUpdated;
+
+		UFUNCTION(BlueprintCallable, Category = "Components|Spine|Skeleton")
+			bool HasSkin(FString SkinName)const;
+
+		UFUNCTION(BlueprintCallable, Category = "Components|Spine|Skeleton")
+			bool SetAttachment(const FString slotName, const FString attachmentName);
+
+		UFUNCTION(BlueprintCallable, Category = "Components|Spine|Skeleton")
+			bool GetBoneWorldTransform(const FString& BoneName, FTransform& OutTransform)const;
+
+		/*UFUNCTION(BlueprintCallable, Category = "Components|Spine|Skeleton")
+		void SetBoneWorldPosition (const FString& BoneName, const FVector& position);*/
+
+		UFUNCTION(BlueprintCallable, Category = "Components|Spine|Skeleton")
+			void UpdateWorldTransform();
+
+		UFUNCTION(BlueprintCallable, Category = "Components|Spine|Skeleton")
+			void SetToSetupPose();
+
+		UFUNCTION(BlueprintCallable, Category = "Components|Spine|Skeleton")
+			void SetBonesToSetupPose();
+
+		UFUNCTION(BlueprintCallable, Category = "Components|Spine|Skeleton")
+			void SetSlotsToSetupPose();
+
+		UFUNCTION(BlueprintCallable, Category = "Components|Spine|Skeleton")
+			void SetScaleX(float scaleX);
+
+		UFUNCTION(BlueprintCallable, Category = "Components|Spine|Skeleton")
+			float GetScaleX();
+
+		UFUNCTION(BlueprintCallable, Category = "Components|Spine|Skeleton")
+			void SetScaleY(float scaleY);
+
+		UFUNCTION(BlueprintCallable, Category = "Components|Spine|Skeleton")
+			float GetScaleY();
+
+		UFUNCTION(BlueprintPure, Category = "Components|Spine|Skeleton")
+			void GetBones(TArray<FName> &BoneNames)const;
+
+		UFUNCTION(BlueprintCallable, Category = "Components|Spine|Skeleton")
+			bool HasBone(FName BoneName)const;
+
+		UFUNCTION(BlueprintPure, Category = "Components|Spine|Skeleton")
+			void GetSlots(TArray<FString> &Slots)const;
+
+		UFUNCTION(BlueprintCallable, Category = "Components|Spine|Skeleton")
+			bool HasSlot(FString SlotName)const;
+
+		UFUNCTION(BlueprintPure, Category = "Components|Spine|Skeleton")
+			void GetAnimations(TArray<FString> &Animations)const;
+
+		UFUNCTION(BlueprintCallable, Category = "Components|Spine|Skeleton")
+			bool HasAnimation(FString AnimationName)const;
+
+		UFUNCTION(BlueprintCallable, Category = "Components|Spine|Skeleton")
+			float GetAnimationDuration(FString AnimationName)const;
+
+
+
+		virtual FTransform GetSocketTransform(FName InSocketName, ERelativeTransformSpace TransformSpace = RTS_World) const override;
+		virtual bool HasAnySockets() const override;
+		virtual void QuerySupportedSockets(TArray<FComponentSocketDescription>& OutSockets) const override;
+		virtual bool DoesSocketExist(FName InSocketName) const override;
+
+		//virtual void Activate(bool bReset = false) override;
+		//virtual void Deactivate() override;
+
+		/*UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FString CurrentSkinName;*/
+
+		/*UFUNCTION(BlueprintCallable)
+		FString GetCurrentSkinName()const { return CurrentSkinName; }*/
+
+
+		virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+		//virtual bool Sucker(const FCustomAtlasRegion& InRegion, FString TemplateSkin=TEXT("Skin_A"), FString SlotName= TEXT("Socket"), FString AttachmentName= TEXT("SkinPlaceholder"));
+
+protected:
+	virtual void CheckState();
+	virtual void InternalTick_SkeletonPose(float DeltaTime);
+	virtual void DisposeState();
+
+	TSharedPtr<spine::Skeleton> CurrentSpineSkeleton;
+
+	TSharedPtr<spine::SkeletonData> lastSkeletonData;
+
+	UPROPERTY(Transient, DuplicateTransient)
+		USpineSkeletonDataAsset* LastSkeletonAsset = nullptr;
+
+public:
+
+	/* Updates this skeleton renderer using the provided skeleton animation component. */
+	void InternalTick_Renderer();
+
+	// Material Instance parents
+	UPROPERTY(Category = "Spine Render", EditAnywhere, BlueprintReadWrite)
+		UMaterialInterface* NormalBlendMaterial;
+
+	UPROPERTY(Category = "Spine Render", EditAnywhere, BlueprintReadWrite)
+		UMaterialInterface* AdditiveBlendMaterial;
+
+	UPROPERTY(Category = "Spine Render", EditAnywhere, BlueprintReadWrite)
+		UMaterialInterface* MultiplyBlendMaterial;
+
+	UPROPERTY(Category = "Spine Render", EditAnywhere, BlueprintReadWrite)
+		UMaterialInterface* ScreenBlendMaterial;
+
+	// Need to hold on to the dynamic instances, or the GC will kill us while updating them
+	UPROPERTY(Category = "Spine Render", VisibleAnywhere, BlueprintReadOnly)
+		TArray<UMaterialInstanceDynamic*> atlasNormalBlendMaterials;
+	TMap< spine::AtlasPage, UMaterialInstanceDynamic*> pageToNormalBlendMaterial;
+
+	UPROPERTY(Category = "Spine Render", VisibleAnywhere, BlueprintReadOnly)
+		TArray<UMaterialInstanceDynamic*> atlasAdditiveBlendMaterials;
+	TMap<spine::AtlasPage, UMaterialInstanceDynamic*> pageToAdditiveBlendMaterial;
+
+	UPROPERTY(Category = "Spine Render", VisibleAnywhere, BlueprintReadOnly)
+		TArray<UMaterialInstanceDynamic*> atlasMultiplyBlendMaterials;
+	TMap<spine::AtlasPage, UMaterialInstanceDynamic*> pageToMultiplyBlendMaterial;
+
+	UPROPERTY(Category = "Spine Render", VisibleAnywhere, BlueprintReadOnly)
+		TArray<UMaterialInstanceDynamic*> atlasScreenBlendMaterials;
+	TMap<spine::AtlasPage, UMaterialInstanceDynamic*> pageToScreenBlendMaterial;
+
+	UPROPERTY(Category = "Spine Render", EditAnywhere, BlueprintReadWrite)
+		float DepthOffset;
+
+	UPROPERTY(Category = "Spine Render", EditAnywhere, BlueprintReadWrite)
+		FName TextureParameterName;
+
+	UPROPERTY(Category = "Spine Render", EditAnywhere, BlueprintReadWrite)
+		FLinearColor Color;
+
+	/** Whether to generate collision geometry for the skeleton, or not. */
+	UPROPERTY(Category = "Spine Render", EditAnywhere, BlueprintReadWrite)
+		bool bCreateCollision;
+protected:
+	void UpdateMesh(TSharedRef<class spine::Skeleton> SkeletonRef);
+
+	void Flush(int &Idx, TArray<FVector> &Vertices, TArray<int32> &Indices, TArray<FVector> &Normals, TArray<FVector2D> &Uvs, TArray<FColor> &Colors, TArray<FVector> &Colors2, UMaterialInstanceDynamic* Material);
 
 };

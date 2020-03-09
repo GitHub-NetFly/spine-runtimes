@@ -1,7 +1,6 @@
 ﻿
 
 #include "SpineBoneFollowerComponent.h"
-#include "SpineSkeletonComponent.h"
 
 //
 //USpineBoneFollowerComponent::USpineBoneFollowerComponent () {	
