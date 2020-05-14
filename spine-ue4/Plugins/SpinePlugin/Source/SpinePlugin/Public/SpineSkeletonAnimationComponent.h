@@ -1,17 +1,18 @@
-﻿
+
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "ProceduralMeshComponent.h"
-#include <spine/Atlas.h>
+#include "spine/Atlas.h"
 #include "SpineAnimationGroupDataAsset.h"
 #include "SpineAnimNotify.h"
 #include "GameplayTagAssetInterface.h"
 #include "AbilitySystemInterface.h"
 #include "AbilitySystemComponent.h"
 #include "SpineUnrealTypes.h"
+#include <spine/AnimationState.h>
 
 #include "SpineSkeletonAnimationComponent.generated.h"
 
@@ -45,7 +46,7 @@ public:
 
 	//Added functions for manual configuration
 
-	void OnSpineAnimStateEventReceived(spine::AnimationState* State, enum spine::EventType Type, TSharedRef<spine::TrackEntry> Entry, const spine::Event& Event);
+	void OnSpineAnimStateEventReceived(spine::AnimationState* State,spine::EventType Type, TSharedRef<spine::TrackEntry> Entry, const spine::Event& Event);
 
 	/* Manages if this skeleton should update automatically or is paused. */
 	UFUNCTION(BlueprintCallable, Category="Components|Spine|Animation")
