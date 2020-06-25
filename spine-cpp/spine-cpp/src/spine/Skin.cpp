@@ -184,10 +184,10 @@ TSharedRef<Skin> Skin::GetClone(const FString& NewName) const
 	return NewSkin;
 }
 void Skin::addSkin(Skin* other) {
-	for (size_t i = 0; i < other->getBones().size(); i++)
+	for (int32 i = 0; i < other->getBones().size(); i++)
 		if (!_bones.contains(other->getBones()[i])) _bones.add(other->getBones()[i]);
 
-	for (size_t i = 0; i < other->getConstraints().size(); i++)
+	for (int32 i = 0; i < other->getConstraints().size(); i++)
 		if (!_constraints.contains(other->getConstraints()[i])) _constraints.add(other->getConstraints()[i]);
 
 	AttachmentMap::Entries entries = other->getAttachments();
@@ -198,10 +198,10 @@ void Skin::addSkin(Skin* other) {
 }
 
 void Skin::copySkin(Skin* other) {
-	for (size_t i = 0; i < other->getBones().size(); i++)
+	for (int32 i = 0; i < other->getBones().size(); i++)
 		if (!_bones.contains(other->getBones()[i])) _bones.add(other->getBones()[i]);
 
-	for (size_t i = 0; i < other->getConstraints().size(); i++)
+	for (int32 i = 0; i < other->getConstraints().size(); i++)
 		if (!_constraints.contains(other->getConstraints()[i])) _constraints.add(other->getConstraints()[i]);
 
 	AttachmentMap::Entries entries = other->getAttachments();

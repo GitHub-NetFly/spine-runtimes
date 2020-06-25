@@ -71,7 +71,7 @@ SkeletonData::~SkeletonData()
 	ContainerUtil::cleanUpVectorOfPointers(_ikConstraints);
 	ContainerUtil::cleanUpVectorOfPointers(_transformConstraints);
 	ContainerUtil::cleanUpVectorOfPointers(_pathConstraints);
-	for (size_t i = 0; i < _strings.size(); i++) {
+	for (int32 i = 0; i < _strings.size(); i++) {
 		SpineExtension::free(_strings[i], __FILE__, __LINE__);
 	}
 }

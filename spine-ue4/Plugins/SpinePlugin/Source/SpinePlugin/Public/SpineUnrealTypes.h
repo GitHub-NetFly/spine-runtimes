@@ -1,11 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
 #include "Engine/DataTable.h"
-
+#include "Engine/DataAsset.h"
 #include "SpineUnrealTypes.generated.h"
 
 /**
@@ -46,8 +46,13 @@ enum class ESpineMaterialBlendType :uint8
 
 
 
+
+
+
+
+
 USTRUCT(BlueprintType)
-struct FReplaceSkinAttachmentDesc:public FTableRowBase
+struct SPINEPLUGIN_API FReplaceSkinAttachmentDesc
 {
 	GENERATED_BODY()
 
@@ -73,19 +78,18 @@ public:
 	TSharedPtr<spine::Attachment> FindOriginAttachment(spine::Skeleton& InSkeleton, spine::Skin& InSkin, spine::Atlas& InAtlas, int32& OutSlotIndex) const;
 };
 
-
-USTRUCT(BlueprintType)
-struct FReplaceAttachmentGroup
+UCLASS(BlueprintType)
+class SPINEPLUGIN_API USpineAttachmentOverrideConfigAsset : public UDataAsset
 {
 	GENERATED_BODY()
+
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<FReplaceSkinAttachmentDesc> Replacements;
+		TArray<struct FReplaceSkinAttachmentDesc> Replacements;
 };
 
-
 USTRUCT(BlueprintType)
-struct FUpdateMaterialParam
+struct SPINEPLUGIN_API FUpdateMaterialParam
 {
 	GENERATED_BODY()
 public:
@@ -187,7 +191,7 @@ public:
 };
 
 USTRUCT(BlueprintType)
-struct FUpdateMaterialHandle
+struct SPINEPLUGIN_API FUpdateMaterialHandle
 {
 	GENERATED_BODY()
 public:
@@ -248,7 +252,7 @@ private:
 DECLARE_DELEGATE_OneParam(FOnUpdateMaterialFinishedDelegate,bool);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FK2OnUpdateMaterialFinishedDelegate, bool, bWasCanceled);
 
-struct FParamID
+struct SPINEPLUGIN_API FParamID
 {
 	ESpineMaterialBlendType BlendType;
 
@@ -261,7 +265,7 @@ struct FParamID
 	bool operator!=(const FParamID& Other) const { return !operator==(Other); }
 };
 
-struct FParamCurrentData
+struct SPINEPLUGIN_API FParamCurrentData
 {
 	FParamCurrentData() = default;
 	FParamCurrentData(float InValue) { bIsFloat = true; FloatValue = InValue; }
@@ -303,7 +307,7 @@ struct FParamCurrentData
 };
 
 USTRUCT(BlueprintType)
-struct FUpdateMaterialRuntime
+struct SPINEPLUGIN_API FUpdateMaterialRuntime
 {
 	GENERATED_BODY()
 public:

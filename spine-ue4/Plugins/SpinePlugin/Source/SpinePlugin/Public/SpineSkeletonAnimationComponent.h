@@ -1,4 +1,4 @@
-
+﻿
 
 #pragma once
 
@@ -131,8 +131,23 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Spine)
 	int32 Prior;
 
+	UFUNCTION(BlueprintCallable, Category = Spine)
+	FString GetCurrentSkin()const
+	{
+		return CurrentSkinName;
+	}
 
-#if WITH_EDITOR
+	UFUNCTION(BlueprintCallable, Category = Spine)
+		void SetSkin(FString SkinName);
+
+
+	TSet<FString> GetAllValidSkinNames()const;
+
+
+	UPROPERTY()
+	FString CurrentSkinName;
+
+#if WITH_EDITORONLY_DATA
 
 	UPROPERTY(EditAnywhere, Category = Spine)
 	FSpineAnimationSpec PreviewAnimSpec;
@@ -141,6 +156,9 @@ public:
 	FString PreviewSkinName = TEXT("default");
 #endif
 	
+	UPROPERTY(EditAnywhere, Category = Spine)
+	FString defaultSkinName = TEXT("default");
+
 	// used in C event callback. Needs to be public as we can't call
 	// protected methods from plain old C function.
 	void GCTrackEntry(UTrackEntry* entry);
@@ -149,12 +167,13 @@ public:
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
+	UFUNCTION(BlueprintCallable)
+	virtual bool ApplyReplaceAttachment(USpineAttachmentOverrideConfigAsset* OverrideConfigAsset) ;
 
-	virtual bool ApplyReplaceAttachment(const FReplaceAttachmentGroup& ReplacementGroup) ;
+	UFUNCTION(BlueprintCallable)
+	virtual bool CancelReplaceAttachment(USpineAttachmentOverrideConfigAsset* OverrideConfigAsset) ;
 
-	virtual bool CancelReplaceAttachment(const FReplaceAttachmentGroup& ReplacementGroup) ;
-
-	virtual bool SetSkin(FString SkinName) ;
+	virtual bool Internal_SetSkin(FString SkinName) ;
 
 	void StopAnimationStateMachine();
 

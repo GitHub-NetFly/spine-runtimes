@@ -495,21 +495,29 @@ void USpineSkeletonAnimationComponent::SetSkeletonAsset(USpineSkeletonDataAsset*
 		SkeletonData = InSkeletonAsset;
 		CheckState();
 		OnSpineSkeletonUpdated.Broadcast();
+		SetSkin(CurrentSkinName);
 	}
 }
 
-bool USpineSkeletonAnimationComponent::SetSkin(FString SkinName)
+bool USpineSkeletonAnimationComponent::Internal_SetSkin(FString SkinName)
 {
 	CheckState();
 	if (CurrentSpineSkeleton.IsValid())
 	{
-		TSharedPtr<Skin> skin = CurrentSpineSkeleton->getData()->findSkin(SkinName);
-		if (!skin)
+		TSharedPtr<Skin> NewSkin = CurrentSpineSkeleton->getData()->findSkin(SkinName);
+		if (!NewSkin)
 		{
 			return false;
 		}
 
-		CurrentSpineSkeleton->setSkin(skin);
+		TSharedPtr<Skin> OldSkin = CurrentSpineSkeleton->getSkin();
+
+		if (OldSkin == NewSkin)
+		{
+			return false;
+		}
+
+		CurrentSpineSkeleton->setSkin(NewSkin);
 		CurrentSpineSkeleton->setSlotsToSetupPose();
 
 		if (SpineAnimState)
@@ -555,8 +563,10 @@ void USpineSkeletonAnimationComponent::OnRegister()
 {
 	Super::OnRegister();
 
+	UWorld* World = GetWorld();
+
 #if WITH_EDITOR
-	if (GetWorld() && (GetWorld()->IsPreviewWorld() || GetWorld()->IsEditorWorld()))
+	if (World && (World->IsPreviewWorld() || World->IsEditorWorld()))
 	{
 		if (IsValid(PreviewAnimSpec.RelatedSpineSkeletonDataAsset))
 		{
@@ -579,6 +589,11 @@ void USpineSkeletonAnimationComponent::OnRegister()
 		}
 	}
 #endif
+
+	if (World && World->IsGameWorld())
+	{
+		SetSkin(defaultSkinName);
+	}
 }
 
 void USpineSkeletonAnimationComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -949,6 +964,34 @@ void USpineSkeletonAnimationComponent::AddDynamicAnimEventListener(const FSpineA
 	}
 }
 
+void USpineSkeletonAnimationComponent::SetSkin(FString SkinName)
+{
+	CurrentSkinName = SkinName;
+
+	TSet<FString> AllValidSkinNameSet = GetAllValidSkinNames();
+	if (nullptr == AllValidSkinNameSet.Find(SkinName))
+	{
+		return;
+	}
+
+	Internal_SetSkin(CurrentSkinName);
+}
+
+TSet<FString> USpineSkeletonAnimationComponent::GetAllValidSkinNames() const
+{
+	const_cast<ThisClass*>(this)->CheckState();
+	TSet<FString> Result;
+
+	if (CurrentSpineSkeleton.IsValid())
+	{
+		for (auto SkinObjPtr : CurrentSpineSkeleton->getData()->getSkins())
+		{
+			check(SkinObjPtr.IsValid());
+			Result.Add(SkinObjPtr->getName());
+		}
+	}
+	return Result;
+}
 void USpineSkeletonAnimationComponent::GCTrackEntry(UTrackEntry* entry)
 {
 	trackEntries.Remove(entry);
@@ -1695,9 +1738,14 @@ bool USpineSkeletonAnimationComponent::DoesSocketExist(FName InSocketName) const
 	return Bone != nullptr;
 }
 
-bool USpineSkeletonAnimationComponent::ApplyReplaceAttachment(const FReplaceAttachmentGroup& ReplacementGroup)
+bool USpineSkeletonAnimationComponent::ApplyReplaceAttachment(USpineAttachmentOverrideConfigAsset* OverrideConfigAsset)
 {
 	CheckState();
+
+	if (!OverrideConfigAsset)
+	{
+		return false;
+	}
 
 	if (!CurrentSpineSkeleton)
 	{
@@ -1731,7 +1779,7 @@ bool USpineSkeletonAnimationComponent::ApplyReplaceAttachment(const FReplaceAtta
 
 	bool bAnyReplaced = false;
 
-	for (const FReplaceSkinAttachmentDesc& OneReplace : ReplacementGroup.Replacements)
+	for (const FReplaceSkinAttachmentDesc& OneReplace : OverrideConfigAsset->Replacements)
 	{
 		int32 SlotIndex = INDEX_NONE;
 
@@ -1757,7 +1805,6 @@ bool USpineSkeletonAnimationComponent::ApplyReplaceAttachment(const FReplaceAtta
 	{
 		CurrentSpineSkeleton->setSkin(CopyedSkin);
 		CurrentSpineSkeleton->setSlotsToSetupPose();
-		// animation subclass need call SpineAnimState->apply(GetSkeleton()->AsShared().Get());
 
 		if (SpineAnimState)
 		{
@@ -1771,9 +1818,14 @@ bool USpineSkeletonAnimationComponent::ApplyReplaceAttachment(const FReplaceAtta
 }
 
 
-bool USpineSkeletonAnimationComponent::CancelReplaceAttachment(const FReplaceAttachmentGroup& ReplacementGroup)
+bool USpineSkeletonAnimationComponent::CancelReplaceAttachment(USpineAttachmentOverrideConfigAsset* OverrideConfigAsset)
 {
 	CheckState();
+
+	if (!OverrideConfigAsset)
+	{
+		return false;
+	}
 
 	if (!CurrentSpineSkeleton)
 	{
@@ -1808,7 +1860,7 @@ bool USpineSkeletonAnimationComponent::CancelReplaceAttachment(const FReplaceAtt
 	TSharedPtr< spine::Skin> CopyedSkin = CurrentSkin->GetClone(CurrentSkin->getName());
 
 	bool bAnyReplaced = false;
-	for (const FReplaceSkinAttachmentDesc& OneReplace : ReplacementGroup.Replacements)
+	for (const FReplaceSkinAttachmentDesc& OneReplace : OverrideConfigAsset->Replacements)
 	{
 		int32 SlotIndex = INDEX_NONE;
 
@@ -1838,7 +1890,6 @@ bool USpineSkeletonAnimationComponent::CancelReplaceAttachment(const FReplaceAtt
 			SpineAnimState->apply(GetSkeleton()->AsShared().Get());
 		}
 
-		// animation subclass need call SpineAnimState->apply(GetSkeleton()->AsShared().Get());
 	}
 	return bAnyReplaced;
 }

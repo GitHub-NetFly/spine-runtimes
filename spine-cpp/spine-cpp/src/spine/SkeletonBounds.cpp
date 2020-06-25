@@ -56,7 +56,7 @@ void SkeletonBounds::update(Skeleton &skeleton, bool updateAabb)
 
 	_polygons.clear();
 
-	for (size_t i = 0; i < slotCount; i++) {
+	for (int32 i = 0; i < slotCount; i++) {
 		TSharedPtr<Slot> slot = slots[i];
 		if (!slot->getBone().isActive()) continue;
 

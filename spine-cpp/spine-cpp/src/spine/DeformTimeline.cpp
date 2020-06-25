@@ -104,12 +104,12 @@ void DeformTimeline::apply(Skeleton &skeleton, float lastTime, float time, Vecto
 			if (attachment->getBones().size() == 0) {
 				// Unweighted vertex positions.
 				Vector<float> &setupVertices = attachment->getVertices();
-				for (size_t i = 0; i < vertexCount; i++)
+				for (int32 i = 0; i < vertexCount; i++)
 					deformInner[i] += (setupVertices[i] - deformInner[i]) * alpha;
 			} else {
 				// Weighted deform offsets.
 				alpha = 1 - alpha;
-				for (size_t i = 0; i < vertexCount; i++)
+				for (int32 i = 0; i < vertexCount; i++)
 					deformInner[i] *= alpha;
 			}
 		}
@@ -130,11 +130,11 @@ void DeformTimeline::apply(Skeleton &skeleton, float lastTime, float time, Vecto
 				if (vertexAttachment->getBones().size() == 0) {
 					// Unweighted vertex positions, no alpha.
 					Vector<float> &setupVertices = vertexAttachment->getVertices();
-					for (size_t i = 0; i < vertexCount; i++)
+					for (int32 i = 0; i < vertexCount; i++)
 						deform[i] += lastVertices[i] - setupVertices[i];
 				} else {
 					// Weighted deform offsets, no alpha.
-					for (size_t i = 0; i < vertexCount; i++)
+					for (int32 i = 0; i < vertexCount; i++)
 						deform[i] += lastVertices[i];
 				}
 			} else {
@@ -154,7 +154,7 @@ void DeformTimeline::apply(Skeleton &skeleton, float lastTime, float time, Vecto
 						}
 					} else {
 						// Weighted deform offsets, with alpha.
-						for (size_t i = 0; i < vertexCount; i++)
+						for (int32 i = 0; i < vertexCount; i++)
 							deform[i] = lastVertices[i] * alpha;
 					}
 					break;
@@ -162,7 +162,7 @@ void DeformTimeline::apply(Skeleton &skeleton, float lastTime, float time, Vecto
 				case MixBlend_First:
 				case MixBlend_Replace:
 					// Vertex positions or deform offsets, with alpha.
-					for (size_t i = 0; i < vertexCount; i++)
+					for (int32 i = 0; i < vertexCount; i++)
 						deform[i] += (lastVertices[i] - deform[i]) * alpha;
 					break;
 				case MixBlend_Add:
@@ -170,11 +170,11 @@ void DeformTimeline::apply(Skeleton &skeleton, float lastTime, float time, Vecto
 					if (vertexAttachment->getBones().size() == 0) {
 						// Unweighted vertex positions, no alpha.
 						Vector<float> &setupVertices = vertexAttachment->getVertices();
-						for (size_t i = 0; i < vertexCount; i++)
+						for (int32 i = 0; i < vertexCount; i++)
 							deform[i] += (lastVertices[i] - setupVertices[i]) * alpha;
 					} else {
 						// Weighted deform offsets, alpha.
-						for (size_t i = 0; i < vertexCount; i++)
+						for (int32 i = 0; i < vertexCount; i++)
 							deform[i] += lastVertices[i] * alpha;
 					}
 			}

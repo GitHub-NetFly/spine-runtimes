@@ -1158,9 +1158,9 @@ void AnimationState::computeHold(TSharedPtr<TrackEntry> entry) {
 			} else {
 				for (TWeakPtr<TrackEntry> next = to->_mixingTo; next.IsValid(); next = next.Pin() ->_mixingTo) {
 					if(next.Pin()->_animation->hasTimeline(id)) continue;
-					if (entry->_mixDuration > 0) {
+					if (next.Pin()->_mixDuration > 0) {
 						timelineMode[i] = Spine_HoldMix;
-						timelineHoldMix[i] = entry;
+						timelineHoldMix[i] = next.Pin();
 						i++;
 						goto continue_outer; // continue outer;
 					}

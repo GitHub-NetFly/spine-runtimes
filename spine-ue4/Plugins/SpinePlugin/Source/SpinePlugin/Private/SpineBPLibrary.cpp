@@ -9,7 +9,8 @@ FString USpineBPLibrary::ToString(const FSpineAnimationSpec& SpineAnimSpec)
 	return SpineAnimSpec.GetDebugString();
 }
 
-bool USpineBPLibrary::FetchSkinAttachmentDescFromDatable(UDataTable* InTable, TArray<FReplaceSkinAttachmentDesc>& OutAttachmentDescs)
+bool USpineBPLibrary::FetchSkinAttachmentDescFromDatable(UDataTable* InTable,
+ TArray<FReplaceSkinAttachmentDesc>& OutAttachmentDescs)
 {
 	if (!IsValid(InTable))
 	{

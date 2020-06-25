@@ -781,7 +781,7 @@ float SkeletonJson::toColor(const char *value, int32 index) {
 	char *error;
 	int color;
 
-	if (index >= strlen(value) / 2) {
+	if (index >= (int32)strlen(value) / 2) {
 		return -1;
 	}
 

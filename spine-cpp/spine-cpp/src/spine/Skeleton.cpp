@@ -453,7 +453,7 @@ void Skeleton::getBounds(float &outX, float &outY, float &outWidth, float &outHe
 	float maxX = SMALL_NUMBER;
 	float maxY = SMALL_NUMBER;
 
-	for (size_t i = 0; i < _drawOrder.Num(); ++i) {
+	for (int32 i = 0; i < _drawOrder.Num(); ++i) {
 		TSharedPtr<Slot> slot = _drawOrder[i];
 		if (!slot->_bone._active) continue;
 		size_t verticesLength = 0;
@@ -471,14 +471,14 @@ void Skeleton::getBounds(float &outX, float &outY, float &outWidth, float &outHe
 			MeshAttachment *mesh = static_cast<MeshAttachment *>(attachment);
 
 			verticesLength = mesh->getWorldVerticesLength();
-			if (outVertexBuffer.size() < verticesLength) {
+			if (outVertexBuffer.size() < (int32)verticesLength) {
 				outVertexBuffer.setSize(verticesLength, 0);
 			}
 
 			mesh->computeWorldVertices(*slot, 0, verticesLength, outVertexBuffer, 0);
 		}
 
-		for (int32 ii = 0; ii < verticesLength; ii += 2) {
+		for (int32 ii = 0; ii < (int32)verticesLength; ii += 2) {
 			float vx = outVertexBuffer[ii];
 			float vy = outVertexBuffer[ii + 1];
 

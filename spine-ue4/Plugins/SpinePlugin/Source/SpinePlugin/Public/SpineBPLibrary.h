@@ -45,3 +45,4 @@ public:
 	static FUpdateMaterialParam MakeColorTypeMaterialParam(FName ParamName,
 		FLinearColor ColorValue, ESpineMaterialBlendType BlendType);
 };
+
